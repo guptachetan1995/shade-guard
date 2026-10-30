@@ -1,0 +1,9 @@
+{
+  "note": "The demo shopper's cart in the fictional store. Three complexion products and one that is not.",
+  "lines": [
+    { "lineId": "L1", "productId": "skin-tint", "shadeCode": "220N", "finish": "satin", "qty": 1 },
+    { "lineId": "L2", "productId": "serum-foundation", "shadeCode": "S12", "finish": "radiant", "qty": 1 },
+    { "lineId": "L3", "productId": "cushion", "shadeCode": "C3", "finish": "satin", "qty": 1 },
+    { "lineId": "L4", "productId": "setting-spray", "shadeCode": null, "finish": null, "qty": 1 }
+  ]
+}
