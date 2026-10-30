@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-transport="pages">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shade Guard</title>
+  <meta name="description" content="Checks the foundation in a cart against the shopper's own face, and turns a wrong-shade return into the right exchange.">
+  <link rel="stylesheet" href="public/styles.css">
+  <script type="module" src="public/app.js"></script>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="top">
+      <a class="brand" href="#/shop">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text"><strong>Shade Guard</strong><small>in Tint &amp; Tone, a fictional store</small></span>
+      </a>
+      <nav class="tabs" aria-label="Views">
+        <a href="#/shop" data-route="shop">Shop</a>
+        <a href="#/return/R-107" data-route="return">Return page</a>
+        <a href="#/desk" data-route="desk">Returns desk</a>
+        <a href="#/merchant" data-route="merchant">Merchant</a>
+      </nav>
+      <div class="top-right">
+        <span class="badge" id="mode-badge" data-mode="loading">Loading</span>
+        <button type="button" class="btn small bts-toggle" id="bts-toggle" data-action="bts-toggle" aria-expanded="false" aria-controls="bts">Behind the scenes</button>
+      </div>
+    </header>
+    <p class="mode-banner" id="mode-banner" role="note"></p>
+    <p class="flash" id="flash" role="status" aria-live="polite"></p>
+    <main id="view" class="view" tabindex="-1"><p class="loading">Loading the store…</p></main>
+  </div>
+  <aside id="bts" class="bts" hidden aria-label="Behind the scenes"></aside>
+  <noscript><p class="noscript">Shade Guard needs JavaScript to run the store.</p></noscript>
+</body>
+</html>

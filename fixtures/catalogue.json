@@ -1,0 +1,528 @@
+{
+  "note": "Authored, fictional products and shades. lab is the swatch's CIELAB (D65) value; hex is its display colour.",
+  "products": [
+    {
+      "productId": "skin-tint",
+      "name": "Skin Tint (fictional)",
+      "complexion": true,
+      "sampleDuoSku": "skin-tint-duo",
+      "shades": [
+        {
+          "code": "110C",
+          "name": "110 Cool",
+          "hex": "#E4CDC3",
+          "lab": [
+            84.02,
+            6.4,
+            7.9
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 6
+        },
+        {
+          "code": "130N",
+          "name": "130 Neutral",
+          "hex": "#DDC1B2",
+          "lab": [
+            80.03,
+            7.55,
+            11.2
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 11
+        },
+        {
+          "code": "160W",
+          "name": "160 Warm",
+          "hex": "#D6B59D",
+          "lab": [
+            75.93,
+            8.28,
+            16.66
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 8
+        },
+        {
+          "code": "190C",
+          "name": "190 Cool",
+          "hex": "#CFAC9C",
+          "lab": [
+            73.01,
+            10.3,
+            13
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 7
+        },
+        {
+          "code": "220N",
+          "name": "220 Neutral",
+          "hex": "#C9A38C",
+          "lab": [
+            69.83,
+            10.64,
+            17.24
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 9
+        },
+        {
+          "code": "245W",
+          "name": "245 Warm",
+          "hex": "#BC9275",
+          "lab": [
+            63.78,
+            11.84,
+            21.45
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 14
+        },
+        {
+          "code": "250W",
+          "name": "250 Warm",
+          "hex": "#B38B6F",
+          "lab": [
+            60.96,
+            11.33,
+            20.81
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 10
+        },
+        {
+          "code": "280N",
+          "name": "280 Neutral",
+          "hex": "#A17C66",
+          "lab": [
+            55.02,
+            11.22,
+            17.54
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 12
+        },
+        {
+          "code": "310W",
+          "name": "310 Warm",
+          "hex": "#986E51",
+          "lab": [
+            50,
+            12.95,
+            22.72
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 5
+        },
+        {
+          "code": "340C",
+          "name": "340 Cool",
+          "hex": "#886253",
+          "lab": [
+            45.07,
+            13.3,
+            14.61
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 4
+        },
+        {
+          "code": "370N",
+          "name": "370 Neutral",
+          "hex": "#755542",
+          "lab": [
+            39.02,
+            10.62,
+            16.29
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 3
+        },
+        {
+          "code": "400W",
+          "name": "400 Warm",
+          "hex": "#684A32",
+          "lab": [
+            34.13,
+            9.54,
+            19.32
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "matte",
+            "satin",
+            "radiant"
+          ],
+          "stock": 0
+        }
+      ]
+    },
+    {
+      "productId": "serum-foundation",
+      "name": "Serum Foundation (fictional)",
+      "complexion": true,
+      "sampleDuoSku": "serum-duo",
+      "shades": [
+        {
+          "code": "S04",
+          "name": "Shade 04",
+          "hex": "#E0C7B8",
+          "lab": [
+            81.92,
+            6.4,
+            10.72
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 6
+        },
+        {
+          "code": "S08",
+          "name": "Shade 08",
+          "hex": "#D6B8A7",
+          "lab": [
+            76.9,
+            8.1,
+            12.61
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 9
+        },
+        {
+          "code": "S10",
+          "name": "Shade 10",
+          "hex": "#CFAD96",
+          "lab": [
+            73.13,
+            8.92,
+            16.44
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 7
+        },
+        {
+          "code": "S12",
+          "name": "Shade 12",
+          "hex": "#C4A18B",
+          "lab": [
+            68.82,
+            9.63,
+            16.31
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 11
+        },
+        {
+          "code": "S14",
+          "name": "Shade 14",
+          "hex": "#C0987E",
+          "lab": [
+            65.88,
+            11.26,
+            19.38
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 13
+        },
+        {
+          "code": "S15",
+          "name": "Shade 15",
+          "hex": "#B48D72",
+          "lab": [
+            61.63,
+            10.99,
+            20.06
+          ],
+          "undertone": "warm",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 8
+        },
+        {
+          "code": "S18",
+          "name": "Shade 18",
+          "hex": "#A98068",
+          "lab": [
+            56.95,
+            12.52,
+            19.16
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 10
+        },
+        {
+          "code": "S22",
+          "name": "Shade 22",
+          "hex": "#9D7359",
+          "lab": [
+            52.01,
+            13.1,
+            20.87
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 5
+        },
+        {
+          "code": "S26",
+          "name": "Shade 26",
+          "hex": "#896553",
+          "lab": [
+            45.98,
+            11.96,
+            15.86
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 4
+        },
+        {
+          "code": "S30",
+          "name": "Shade 30",
+          "hex": "#7A5641",
+          "lab": [
+            39.87,
+            12.12,
+            18.14
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "satin",
+            "radiant"
+          ],
+          "stock": 3
+        }
+      ]
+    },
+    {
+      "productId": "cushion",
+      "name": "Cushion Compact (fictional, 8 shades)",
+      "complexion": true,
+      "sampleDuoSku": "cushion-duo",
+      "shades": [
+        {
+          "code": "C1",
+          "name": "Shade 1",
+          "hex": "#E3CABE",
+          "lab": [
+            83.07,
+            6.83,
+            9.19
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin"
+          ],
+          "stock": 7
+        },
+        {
+          "code": "C2",
+          "name": "Shade 2",
+          "hex": "#DBBEB0",
+          "lab": [
+            79.05,
+            8.11,
+            10.87
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin"
+          ],
+          "stock": 9
+        },
+        {
+          "code": "C3",
+          "name": "Shade 3",
+          "hex": "#D2B1A1",
+          "lab": [
+            74.65,
+            9.46,
+            12.63
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin"
+          ],
+          "stock": 12
+        },
+        {
+          "code": "C4",
+          "name": "Shade 4",
+          "hex": "#CEAEA0",
+          "lab": [
+            73.5,
+            9.42,
+            11.5
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin"
+          ],
+          "stock": 6
+        },
+        {
+          "code": "C5",
+          "name": "Shade 5",
+          "hex": "#CFAC9A",
+          "lab": [
+            72.96,
+            10.01,
+            14.03
+          ],
+          "undertone": "neutral",
+          "finishes": [
+            "matte",
+            "satin"
+          ],
+          "stock": 10
+        },
+        {
+          "code": "C6",
+          "name": "Shade 6",
+          "hex": "#AF8077",
+          "lab": [
+            57.93,
+            16.9,
+            12.03
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin"
+          ],
+          "stock": 5
+        },
+        {
+          "code": "C7",
+          "name": "Shade 7",
+          "hex": "#A0706A",
+          "lab": [
+            51.95,
+            18.19,
+            10.95
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin"
+          ],
+          "stock": 4
+        },
+        {
+          "code": "C8",
+          "name": "Shade 8",
+          "hex": "#8E625E",
+          "lab": [
+            46.04,
+            17.29,
+            9.46
+          ],
+          "undertone": "cool",
+          "finishes": [
+            "matte",
+            "satin"
+          ],
+          "stock": 3
+        }
+      ]
+    },
+    {
+      "productId": "setting-spray",
+      "name": "Setting Spray (fictional)",
+      "complexion": false,
+      "sampleDuoSku": null,
+      "shades": []
+    }
+  ]
+}

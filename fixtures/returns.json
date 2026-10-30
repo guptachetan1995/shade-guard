@@ -1,0 +1,31 @@
+{
+  "note": "Fictional orders and return requests. R-104's attached reading is fictional numbers, kept as numbers only; no photo exists for it anywhere.",
+  "orders": [
+    { "orderId": "O-5521", "placedAt": "2026-10-12T10:20:00Z", "lines": [ { "productId": "skin-tint", "shadeCode": "220N", "finish": "satin", "qty": 1 } ] },
+    { "orderId": "O-5530", "placedAt": "2026-10-14T16:05:00Z", "lines": [ { "productId": "skin-tint", "shadeCode": "220N", "finish": "satin", "qty": 1 } ] }
+  ],
+  "returnCases": [
+    {
+      "caseId": "R-104", "orderId": "O-5521", "productId": "skin-tint", "shadeCode": "220N", "finish": "satin",
+      "reason": "wrong shade, opened",
+      "reading": {
+        "checkedAt": "2026-10-12T10:14:00Z",
+        "lab": [64.2, 13.4, 19.6],
+        "band": 1.0,
+        "ranking": [ { "code": "245W", "de00": 2.1 }, { "code": "250W", "de00": 3.51 }, { "code": "220N", "de00": 5.0 } ],
+        "draftDecision": "swap",
+        "recommended": ["245W"],
+        "shopperOutcome": "keep_my_shade"
+      },
+      "draft": null,
+      "status": "open"
+    },
+    {
+      "caseId": "R-107", "orderId": "O-5530", "productId": "skin-tint", "shadeCode": "220N", "finish": "satin",
+      "reason": "wrong shade, opened",
+      "reading": null,
+      "draft": null,
+      "status": "awaiting_check"
+    }
+  ]
+}
