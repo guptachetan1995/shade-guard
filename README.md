@@ -3,6 +3,15 @@
 **Checks the foundation in your cart against your own face, and turns a wrong-shade return
 into the right exchange.**
 
+[![The Skin Tint card on sample data: a synthetic placeholder face split down the middle, 220N on the left and 245W on the right, a divider slider and Cart shade, Split, Recommended buttons under it. Beside it, three shade chips: the measured skin #B9947C, 220N in your bag at ΔE00 4.6, and 245W recommended at ΔE00 1.9, ringed. Below them the agent's draft and the Swap to 245W and Keep mine buttons. The FAKE badge is in the header.](docs/img/evidence-card.png)](https://guptachetan1995.github.io/shade-guard/)
+
+**[Open the demo](https://guptachetan1995.github.io/shade-guard/)**: the real app in your
+browser, with no key and nothing to install. [The one-minute path](#demo-walkthrough).
+
+**Mode today: sample data.** Every screen runs on a synthetic sample shopper and says so.\
+**Run live so far: nothing.** The YouCam provider is written but has not yet called YouCam.
+[Status in detail](#status-in-detail).
+
 Shade Guard is an independent entry to the
 [YouCam API Skin AI & eCommerce VTO Hackathon](https://youcam-api-skin-ai-ecommerce.devpost.com/).
 It is not affiliated with or endorsed by Perfect Corp.
@@ -27,21 +36,7 @@ One reading of a shopper's face is used at three retail moments.
   reading, the shopper is offered a check first. **Only a staff member approves an exchange or
   a refund.**
 - **In the range plan.** Every "no close match" is kept as numbers and listed for the
-  merchandiser: the shade the range lacks.
-
-**Status: the whole store runs today on synthetic sample data; the live YouCam provider is
-written but has not yet made a call to YouCam.** The colour science, the fictional store, the
-one `invoke` chokepoint, the nine agent tools, the seven human-only verbs, the deterministic
-planner, the local server, the shop, the shopper's return page, the returns desk, the merchant
-panel and the static demo all run now, with 126 offline tests. The live provider, the
-balance check, the spike probes and the fixture recorder are tested only against a local
-stand-in for the API that answers in the documented shapes; the first keyed run follows
-[docs/sunday-sitting.md](docs/sunday-sitting.md). Until the sample shopper is recorded, every
-reading comes from a fake provider, and the page says so on every screen: its badge reads
-**"Sample data, not YouCam"**, and the face is a synthetic placeholder drawn in the browser,
-not a person and not a YouCam render. The recorded sample shopper lands inside the
-hackathon's Submission Period (29 Sep – 2 Nov 2026). The [build log](#build-log) records each
-stage as it lands. Sections that describe the live API describe what is being built.
+  merchandiser: the shade the range is missing, and the readings it is missing for.
 
 ## The problem
 
@@ -61,12 +56,32 @@ Shade Guard does the tedious, measurable part: read, rank, render, and draft wit
 The decisions that change the shopper's cart, move the store's money, or spend its API budget
 stay human clicks.
 
+## Not another shade finder
+
+Perfect Corp's own [AI Shade Finder](https://www.perfectcorp.com/business/blog/makeup/foundation-shade-finder-comparison)
+answers "which shade?" on a brand's site: it reads skin tone and undertone from the camera and
+recommends a foundation, with a virtual try-on. Shade Guard starts where that ends:
+
+- it checks the cart the shopper actually built, every foundation in it, against one reading;
+- it may answer "no shade in this range is close" instead of naming the nearest one;
+- it turns a near-tie into the two-shade sample, with a measured ± band on the card;
+- on the returns desk, it drafts the exchange from the reading stored on the order, instead
+  of writing off an opened unit for a refund;
+- it sends every no-match reading to the merchandiser as a range gap, in numbers.
+
+It also differs from two winners of the previous YouCam API hackathon.
+[ShadeSpan](https://devpost.com/software/shadespan) renders each garment in a collection on a
+panel of six skin tones and grades the colours that vanish. [CASTING](https://devpost.com/software/casting)
+puts one product photo on a panel of eight measured skin tones and scores a catalogue's
+coverage. Both check apparel or a catalogue against a fixed panel before a product goes live.
+Shade Guard works from the other side: one real shopper's face, against the shades in their
+own cart and on their own order.
+
 ## How a check works
 
-1. **The shopper starts it.** They upload a photo, or, where the YouCam Camera Kit runs
-   without a key, take one with it, which checks lighting and pose live. The page asks for bare skin. It then shrinks
-   the photo to one JPEG, long side 1024 px, that every YouCam endpoint accepts. Nothing else
-   can start a face analysis.
+1. **The shopper starts it.** They upload a photo (on a phone, the picker also offers the
+   camera). The page asks for bare skin. It then shrinks the photo to one JPEG, long side
+   1024 px, that every YouCam endpoint accepts. Nothing else can start a face analysis.
 2. **Measure, once.** The Facial Color Tones Analyzer returns the skin colour as a hex value,
    and its own verdict on the photo's lighting. Skin Analysis (SD) returns skin type,
    oiliness, moisture and redness. One reading serves every product in the cart.
@@ -101,7 +116,7 @@ Until the sample shopper is recorded the band is a provisional 1.0, and the card
 widens by a fixed 1.5× when the analyser says the shopper's own lighting isn't good. When two
 shades sit inside the band, the draft is the two-shade sample, not a guess.
 
-## The returns desk and the range gap
+## The returns desk
 
 A "wrong shade, opened" return reaches the store's returns desk.
 
@@ -112,10 +127,18 @@ A "wrong shade, opened" return reaches the store's returns desk.
   exchange after it. If no shade in the range fits, it drafts a refund instead.
 - **A person decides.** Staff approve the exchange or the refund. The agent can't.
 
-Every "no close match" is also kept as numbers: the reading's lightness and hue, and how far
-and in which direction the nearest shade sits. The merchant panel lists these per product,
-for example "no shade within ΔE 6, deeper and warmer than C5". That tells the merchandiser
-which shade the range lacks. The panel also shows checks by outcome and the units each check
+## The shade this range is missing, and who it is missing for
+
+Shoppers at the ends of a shade range, or with olive or deep undertones, are the ones a range
+most often fails. Shade Guard records each of those failures as numbers. Every "no close
+match" keeps the reading's lightness (L\*), chroma (C\*) and hue angle, the nearest shade, its
+ΔE00, and the direction from that shade to the reading. The merchant panel lists them per
+product. On the sample data it reads "Cushion Compact: 1 reading with no shade within ΔE00 6,
+deeper and warmer than C5": the range needs a shade past C5, deeper and warmer, and the table
+under the sentence says exactly where.
+
+"Who" here means a measured colour, never a person: the panel holds no photo, name, age or any
+other inference about the shopper. It also shows checks by outcome and the units each check
 cost.
 
 ## YouCam APIs used
@@ -131,9 +154,7 @@ It also uses:
 - the unit balance and feature-cost endpoints, which are free. Every paid call is checked
   against a per-check unit cap before it is sent, and the whole check is priced before the
   photo is uploaded;
-- task delete, which cleans up when a check closes;
-- the YouCam Camera Kit for guided capture, where it runs without a key. The upload path
-  always works.
+- task delete, which cleans up when a check closes.
 
 A check of a three-product cart costs about 36 units.
 
@@ -219,9 +240,8 @@ for its own range.
 
 These are screenshots of the static demo on sample data, so the badge reads **FAKE · Sample
 data, not YouCam** and the face is the synthetic canvas placeholder, stamped as such. Once the
-sample shopper is recorded, the same screens show REPLAY and the real try-on renders.
-
-![The Skin Tint card on sample data: a synthetic placeholder face split down the middle, 220N on the left and 245W on the right, a divider slider and Cart shade, Split, Recommended buttons under it. Beside it, three shade chips: the measured skin #B9947C, 220N in your bag at ΔE00 4.6, and 245W recommended at ΔE00 1.9, ringed. Below them the agent's draft and the Swap to 245W and Keep mine buttons. The FAKE badge is in the header.](docs/img/evidence-card.png)
+sample shopper is recorded, the same screens show REPLAY and the real try-on renders. The
+shopper's evidence card is the image at the top of this page.
 
 ![The returns desk on sample data: return R-104, Skin Tint 220N, "wrong shade, opened". The order's shade reading lists 245W at ΔE00 2.10 (recommended), 250W at 3.51 and 220N at 5.00 (returned). The agent's draft, marked not approved, is an exchange for 245W, and Approve exchange and Approve refund are the staff's buttons. The FAKE badge and the sample-data banner are at the top.](docs/img/returns-desk.png)
 
@@ -317,7 +337,8 @@ files may be imported, the human-only verbs are imported by one wiring module an
 agent's tools, and the environment is read in one server-only file.
 
 With your own YouCam API key (written and tested against a local stand-in; not yet run
-against the live API):
+against the live API). [Running against the live API with your own key](docs/sunday-sitting.md)
+gives the order, the probes, the unit budgets and when to stop:
 
 ```bash
 cp .env.example .env        # then set YOUCAM_MODE=live and your own YOUCAM_API_KEY
@@ -339,9 +360,28 @@ replaced by a local image name.
 Once the sample shopper is recorded, `npm start` serves it in replay mode with no key, and
 `npm run build:pages` copies the recording into the static demo, which then replays it too.
 
+## Status in detail
+
+The whole store runs today on synthetic sample data. The colour science, the fictional store,
+the one `invoke` chokepoint, the nine agent tools, the seven human-only verbs, the
+deterministic planner, the local server, the shop, the shopper's return page, the returns
+desk, the merchant panel and the static demo all run now, with 126 offline tests.
+
+The live provider, the balance check, the spike probes and the fixture recorder are tested
+only against a local stand-in for the API that answers in the documented shapes. None of them
+has called YouCam yet; [Running against the live API with your own key](docs/sunday-sitting.md)
+is the order for the first keyed run. The replay loader is built and tested, but no recording
+of a sample shopper exists yet.
+
+Until one does, every reading comes from a fake provider, and the page says so on every
+screen: its badge reads **"Sample data, not YouCam"**, and the face is a synthetic placeholder
+drawn in the browser, not a person and not a YouCam render. Sections that describe the live
+API describe what the code is written to do against the documented API. The build log below
+records each stage as it lands.
+
 ## Build log
 
-Each row gets its real date as the work lands.
+Each row gets its real date as the work lands, oldest first.
 
 | Date (2026) | Stage | Status |
 |---|---|---|
@@ -349,11 +389,12 @@ Each row gets its real date as the work lands.
 | 30 Oct | The key-free core: colour science (tested on all 34 published CIEDE2000 pairs), the fictional store, the `invoke` chokepoint, nine tools, six human-only verbs, the planner, a fake provider and 79 offline tests. No API key needed, nothing installed | Done |
 | 30 Oct | The local server (127.0.0.1 only), the shop with the split-face evidence card and the jawline strip, every branch screen, the privacy receipt, the shopper's return page, the returns desk, the merchant panel, Behind the scenes with Try it as the agent, and the static demo build, all on synthetic sample data. 96 offline tests, still nothing installed | Done |
 | 30 Oct | The live YouCam provider (the pacer, the background finisher for a task still running at close, strict response parsing), `npm run balance`, `npm run probe` and `npm run record`, all tested against a local stand-in for the API only. 118 offline tests, nothing installed | Done |
-| 30 Oct | Replay mode (`npm start` and the static demo serve the recorded sample shopper once it exists, with the real try-on renders on the face), the 90-second "still working, stop waiting" branch, and the demo video's script. 126 offline tests, nothing installed | Done |
-| Next | A check against the live YouCam API: upload, the three analyses, delete, browser access | Planned |
-| Next | The recorded sample shopper and replay mode | Planned |
+| 30 Oct | The replay loader (`npm start` and the static demo serve a recorded sample shopper once one exists, with the real try-on renders on the face; no recording exists yet), the 90-second "still working, stop waiting" branch, and the demo video's script. 126 offline tests, nothing installed | Done |
 | 30 Oct | A visual design pass over every screen: the store's own palette and type, the shade-card jawline strip, the phone header, the evidence card in two columns on wider screens, contrast fixes, and keyboard focus that follows each step. 126 offline tests, nothing installed | Done |
-| Next | Publishing the repository and the live demo | Planned |
+| 30 Oct | This repository made public | Done |
+| 30 Oct | The live demo on GitHub Pages, on sample data | Done |
+| Next | The first run against the live YouCam API: upload, the three analyses, delete, browser access | Planned |
+| Next | Recording the sample shopper. The replay loader is built; the recording is not made | Planned |
 | Next | The demo video | Planned |
 
 ## License
