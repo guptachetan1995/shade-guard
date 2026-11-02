@@ -837,7 +837,7 @@ function merchantView() {
     : `<p class="empty">No checks yet this session.</p>`;
   return `<section class="merchant" aria-labelledby="m-h"><h1 id="m-h" class="page-title">Merchant panel</h1>
     <div class="m-grid"><div class="m-col">
-      <section class="card m-gaps" aria-labelledby="gap-h"><h2 id="gap-h">Range gaps</h2><p class="lede">Shoppers whose reading had no shade within ΔE00 6.0: the shade the range lacks, found by real checks rather than guessed.</p>${gapHtml}</section>
+      <section class="card m-gaps" aria-labelledby="gap-h"><h2 id="gap-h">Range gaps</h2><p class="lede">Shoppers whose reading had no shade within ΔE00 6.0: the shade the range lacks, measured from each check rather than guessed.</p>${gapHtml}</section>
       <section class="card" aria-labelledby="cap-h"><h2 id="cap-h">Spending cap</h2>
         <p>A check is priced before the photo is uploaded: 29 units to measure, plus up to 3 renders per product (38 for three). Only the merchant changes the cap; the agent can't.</p>
         <div class="cap-form"><label for="cap-input">Units per check</label><input id="cap-input" type="number" min="0" max="1000" step="1" value="${capNow}"><button type="button" class="btn primary" data-action="set-cap">Set cap</button></div>
