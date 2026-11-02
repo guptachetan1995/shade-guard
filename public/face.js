@@ -4,6 +4,7 @@
 //
 // The foundation covers the face only; the neck stays the measured bare skin. That is the
 // jawline test a shop counter does: a wrong shade shows as a line between face and neck.
+import { FACE_STAMP } from "../src/persona.js";
 
 const COVERAGE = 0.88;
 
@@ -175,5 +176,5 @@ export function drawFace(canvas, opts) {
     if (x > 40) tag(ctx, left.code, 8, "left");
     if (x < 260) tag(ctx, right.code, 292, "right");
   }
-  stamp(ctx, "SYNTHETIC · not a person · not YouCam");
+  stamp(ctx, FACE_STAMP.synthetic);
 }

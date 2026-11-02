@@ -18,7 +18,9 @@ import { POLL } from "../tasks.js";
 export const API_BASE = "https://yce-api-01.makeupar.com";
 
 // Skin Analysis also has a /s2s/v2.1/ path; v2.0 stands until the keyed run compares the two.
-export const TASK_VERSION = Object.freeze({ "skin-tone-analysis": "v2.0", "skin-analysis": "v2.0", "makeup-vto": "v2.0" });
+// text-to-image/youcam is the AI Image Generator V2.0, used only by `npm run probe -- gen` to
+// make the sample shopper's face; the app never calls it.
+export const TASK_VERSION = Object.freeze({ "skin-tone-analysis": "v2.0", "skin-analysis": "v2.0", "makeup-vto": "v2.0", "text-to-image/youcam": "v2.0" });
 
 export const PATHS = Object.freeze({
   file: "/s2s/v2.0/file",

@@ -399,7 +399,7 @@ function captureHtml(ctx) {
       return faceCanvas({ skinHex: FAKE_SCENARIOS[c.source.scenario].skinHex, ...look }, { label: "Synthetic placeholder face, bare skin" });
     }
     if (c.source?.kind === "upload") return `<img class="face" src="${esc(c.source.photo.url)}" alt="Your photo, resized in this tab">`;
-    if (c.source?.kind === "recorded") return `<img class="face" src="${esc(c.source.url)}" alt="The recorded sample shopper's photo">`;
+    if (c.source?.kind === "recorded") return stamped(`<img class="face" src="${esc(c.source.url)}" alt="The recorded sample shopper's photo">`);
     return `<div class="face oval" aria-hidden="true"><span>Fill the oval with your face</span></div>`;
   })();
   // Where keyboard focus lands when this stage replaces the button that was used.
@@ -637,6 +637,18 @@ function lineCardHtml(check, lineId, l) {
   </article>`;
 }
 
+// The replayed face's own stamp, over the photo and its renders, when the recording says the face
+// was generated ("AI-generated · not a real person"). Live renders of a shopper's photo carry none.
+function faceStampHtml() {
+  const text = mode().id === "replay" ? mode().faceStamp : null;
+  return text ? `<span class="face-stamp">${esc(text)}</span>` : "";
+}
+
+function stamped(html) {
+  const stamp = faceStampHtml();
+  return stamp ? `<div class="stamped">${html}${stamp}</div>` : html;
+}
+
 // The real Makeup Virtual Try-On renders (replay or live): the cart shade underneath, the other
 // shade on top, clipped at the divider. No canvas drawing stands in for them.
 function renderFigure(check, key, split, cmp, previewOf) {
@@ -646,11 +658,11 @@ function renderFigure(check, key, split, cmp, previewOf) {
     return id ? `<img class="${cls}" data-preview="${esc(`${check.checkId}|${id}`)}" alt="Try-on render of ${esc(code)}">` : "";
   };
   if (!cmp.right) {
-    return `<figure class="split"><div class="split-photo" data-face-key="${esc(key)}" data-split="100">${img(cmp.left.code, "pv-left")}</div>
+    return `<figure class="split"><div class="split-photo" data-face-key="${esc(key)}" data-split="100">${img(cmp.left.code, "pv-left")}${faceStampHtml()}</div>
       <figcaption>${esc(cmp.left.code)} on the face. ${source}</figcaption></figure>`;
   }
   return `<figure class="split">
-    <div class="split-photo" data-face-key="${esc(key)}" data-split="${split}" role="img" aria-label="Left of the divider: ${esc(cmp.left.code)}. Right of it: ${esc(cmp.right.code)}">${img(cmp.left.code, "pv-left")}${img(cmp.right.code, "pv-right")}</div>
+    <div class="split-photo" data-face-key="${esc(key)}" data-split="${split}" role="img" aria-label="Left of the divider: ${esc(cmp.left.code)}. Right of it: ${esc(cmp.right.code)}">${img(cmp.left.code, "pv-left")}${img(cmp.right.code, "pv-right")}${faceStampHtml()}</div>
     ${dividerHtml(key, split, cmp)}
     <figcaption>Left: ${esc(cmp.left.code)}, ${esc(cmp.roles[0])}. Right: ${esc(cmp.right.code)}, ${esc(cmp.roles[1])}. ${source}</figcaption>
   </figure>`;

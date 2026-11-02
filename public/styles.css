@@ -325,6 +325,8 @@ html.frame-phone .bts { display: none; }
 .split-photo { position: relative; width: 100%; max-width: 300px; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; background: #efeaec; --split: 50%; }
 .split-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .split-photo .pv-right { clip-path: inset(0 0 0 var(--split)); }
+.stamped { position: relative; width: fit-content; }
+.face-stamp { position: absolute; left: 8px; bottom: 8px; z-index: 2; max-width: calc(100% - 16px); font: 600 11px/1.2 system-ui, sans-serif; color: #fff; background: rgba(20, 16, 14, 0.78); border-radius: 10px; padding: 4px 7px; pointer-events: none; }
 .split-photo:has(.pv-right)::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--split); width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25); }
 
 /* The 90-second "still working" branch and the receipt's cleanup line. */
