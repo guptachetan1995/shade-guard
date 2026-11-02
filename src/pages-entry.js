@@ -11,6 +11,7 @@ import { describeMode } from "./modes.js";
 import { FakeYouCamProvider } from "./providers/youcam-fake.js";
 import { RecordedYouCamProvider } from "./providers/youcam-recorded.js";
 import { loadRecording } from "./recording.js";
+import { personaOf } from "./persona.js";
 
 export const PAGES_NOTICE = "This static demo runs on synthetic sample data; it makes no network calls.";
 
@@ -18,7 +19,7 @@ export const PAGES_NOTICE = "This static demo runs on synthetic sample data; it 
 export async function createPagesTransport({ tick = true, read = null } = {}) {
   const recording = read ? await loadRecording(read) : null;
   const provider = recording ? new RecordedYouCamProvider(recording) : new FakeYouCamProvider();
-  const mode = recording ? describeMode("replay", null, { recordedAt: recording.recordedAt }) : describeMode("fake", PAGES_NOTICE);
+  const mode = recording ? describeMode("replay", null, { recordedAt: recording.recordedAt, persona: personaOf(recording) }) : describeMode("fake", PAGES_NOTICE);
   const app = await createApp({ provider });
   const api = createApi({ app, mode });
   if (tick) setInterval(() => api.tick().catch(() => {}), TICK_MS);

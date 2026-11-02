@@ -19,9 +19,9 @@ Shade Guard
 
 ## Elevator pitch
 
-At most 200 characters. This one is 197:
+At most 200 characters. This one is 199:
 
-> Checks the foundation in your cart against your own face with YouCam skin-tone analysis and try-on, and turns a wrong-shade return into the right exchange. Only a human click changes cart or money.
+> Checks the foundation in your cart against your face, written for YouCam's skin-tone and try-on APIs, and turns a wrong-shade return into the right exchange. Only a human click changes cart or money.
 
 ## About the project
 
@@ -99,9 +99,9 @@ the panel holds no photo and infers nothing about the shopper.
 - a range gap surfaced to the merchant instead of hidden behind an upsell;
 - the cost of every check visible in units, next to its outcome.
 
-**Where it stands today.** The whole store, the agent and the static demo run on synthetic
-sample data, and every screen says so. The live YouCam provider is written to the documented
-API and tested against a local stand-in; it has not yet called YouCam.
+**Where it stands.** The live YouCam provider is written to the documented API, tested against
+a local stand-in that answers in the documented shapes, and has not run against YouCam. The
+demo and the video run on synthetic sample data, and every screen says so.
 
 <!-- after-sunday
 Replace "Where it stands today" with:
@@ -206,7 +206,7 @@ The live provider is written to the documented API and has not run against it.
   human verb: the agent can't stop a check, and nobody can before 90 seconds.
 - **Uncertainty that means something.** An identical photo sent twice may read the same,
   which says nothing about the shopper's next photo. So the band comes from three readings of
-  one face as taken, 15% brighter and 15% darker, not from re-sends. Until it is measured, the
+  one face as generated, 15% brighter and 15% darker, not from re-sends. Until it is measured, the
   band is a provisional 1.0 and the card says so.
 
 ### Accomplishments that we're proud of
@@ -310,7 +310,7 @@ app for mobile and desktop browsers.
    it has not yet run against YouCam. The step-by-step guide, with probes, unit budgets and
    stop conditions, is
    https://github.com/guptachetan1995/shade-guard/blob/main/docs/sunday-sitting.md.
-3. **Tests:** run `npm test`. All 126 tests run offline.
+3. **Tests:** run `npm test`. All 133 tests run offline.
 
 There are no logins and no accounts to create for the demo.
 

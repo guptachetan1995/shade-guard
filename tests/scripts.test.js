@@ -12,7 +12,10 @@ import { RecordedYouCamProvider } from "../src/providers/youcam-recorded.js";
 import { fakePhoto } from "../src/providers/fake-photos.js";
 import { runPlanner } from "../src/agent/planner.js";
 import { recordFixtures, plannedUnits, scrub, RecordRefusal } from "../scripts/record-fixtures.js";
-import { corsSpy, runProbe } from "../scripts/probe.js";
+import { corsSpy, runGen, runProbe, ProbeRefusal, GEN_FEATURE } from "../scripts/probe.js";
+import { generatedPersona, personaRequest, PERSONA_PROMPT_FILE } from "../scripts/persona-prompt.js";
+import { readJpegInfo } from "../src/photo-check.js";
+import { createHash } from "node:crypto";
 import { loadFixtures } from "../src/fixtures.js";
 import { makeApp, noWait, photo } from "./helpers.js";
 import { startYouCamMock } from "./youcam-mock.js";
@@ -203,5 +206,113 @@ test("the spike probes print shapes, codes, values and units, never the key or a
   } finally {
     await mock.close();
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const quietLive = (mock) => new YouCamProvider({ apiKey: KEY, apiBase: mock.url, pacer: { take: async () => {}, backoff() {} }, wait: noWait });
+
+test("the persona prompt file is a valid text-to-image request within the documented limits", () => {
+  const bytes = readFileSync(PERSONA_PROMPT_FILE);
+  const { body, sha256 } = personaRequest(bytes);
+  assert.deepEqual(Object.keys(body), ["model", "prompt", "negative_prompt", "size", "prompt_extend"]);
+  assert.deepEqual([body.model, body.size, body.prompt_extend], ["youcam-image-v2", "1104*1472", false]);
+  assert.ok([...body.prompt].length <= 800 && [...body.negative_prompt].length <= 500);
+  assert.match(body.prompt, /^Photorealistic head-and-shoulders portrait/);
+  assert.equal(sha256, sha(bytes));
+  assert.match(personaRequest(bytes, "bad-angle").body.prompt, /head turned 30° to her left/);
+  assert.throws(() => personaRequest(bytes, "no-such-variant"), /no prompt\.no-such-variant line/);
+  assert.throws(() => personaRequest(Buffer.from(`prompt: ${"x".repeat(801)}\n`)), /801 characters; the generator takes 800/);
+  assert.deepEqual(generatedPersona(), { source: "youcam-ai-image-generator", model: "youcam-image-v2", promptSha256: sha256 });
+});
+
+test("gen refuses before any paid call: count over 6, no --max-units, no --save, or a plan over --max-units or the balance", async () => {
+  const mock = await startYouCamMock({ key: KEY, balance: 3 });
+  const dir = tempDir();
+  try {
+    const live = quietLive(mock);
+    const base = { live, maxUnits: 6, save: join(dir, "c"), wait: noWait, out: () => {} };
+    await assert.rejects(runGen({ ...base, count: 7 }), (e) => e instanceof ProbeRefusal && /--count must be 1 to 6, not 7/.test(e.message));
+    await assert.rejects(runGen({ ...base, count: 0 }), ProbeRefusal);
+    await assert.rejects(runGen({ ...base, maxUnits: undefined }), /gen needs --max-units/);
+    await assert.rejects(runGen({ ...base, save: null }), /gen needs --save <dir>/);
+    await assert.rejects(runGen({ ...base, count: 4, maxUnits: 3 }), /4 candidates cost up to 4 units, over --max-units 3\. Nothing was sent\./);
+    await assert.rejects(runGen({ ...base, count: 4, maxUnits: 6 }), /cost up to 4 units but the balance is 3\. Nothing was sent\./);
+    const paid = mock.apiRequests().filter((q) => q.method === "POST");
+    assert.deepEqual(paid, [], "no task was created");
+  } finally {
+    await mock.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("gen sends the documented request, downloads each candidate, prints its sha256 and the balance delta, and deletes every task", async () => {
+  const mock = await startYouCamMock({ key: KEY, balance: 515, pollsUntilDone: 2, genEngineErrors: 1 });
+  const dir = tempDir();
+  try {
+    const lines = [];
+    const save = join(dir, "candidates");
+    const r = await runGen({ live: quietLive(mock), count: 3, maxUnits: 6, save, wait: noWait, out: (l) => lines.push(l) });
+    const creates = mock.apiRequests().filter((q) => q.method === "POST" && q.path === "/s2s/v2.0/task/text-to-image/youcam");
+    assert.equal(creates.length, 3);
+    const { body: expected, sha256: promptSha } = personaRequest(readFileSync(PERSONA_PROMPT_FILE));
+    for (const q of creates) assert.deepEqual(JSON.parse(q.body.toString("utf8")), expected);
+    assert.ok(mock.apiRequests().some((q) => q.method === "GET" && q.path.startsWith(`/s2s/v2.0/task/${GEN_FEATURE}/`)), "polled on the generator's own path");
+
+    // The first task is an engine error (no image, no units); the other two are saved.
+    assert.deepEqual(readdirSync(save).sort(), ["candidate-2.jpg", "candidate-3.jpg"]);
+    assert.deepEqual([r.before, r.after, r.spent, r.planned, r.made, r.promptSha256], [515, 513, 2, 3, 2, promptSha]);
+    const text = lines.join("\n");
+    for (const name of ["candidate-2.jpg", "candidate-3.jpg"]) {
+      const bytes = readFileSync(join(save, name));
+      assert.ok(text.includes(`${name}: image/jpeg, ${bytes.length} bytes, sha256 ${sha(bytes)}`), name);
+      const { width, height } = readJpegInfo(new Uint8Array(bytes));
+      assert.deepEqual([width, height], [1104, 1472], "the size asked for");
+    }
+    assert.match(text, new RegExp(`prompt file sha256 ${promptSha}`));
+    assert.match(text, /cost table: text-to-image\/youcam 1/);
+    assert.match(text, /engine error: error_nsfw_content_detected/);
+    assert.match(text, /units: balance 515 → 513 \(2 spent for 2 images; planned up to 3\)/);
+    assert.equal((text.match(/a status read afterwards answers InvalidTaskId/g) ?? []).length, 3);
+    assert.ok([...mock.state.tasks.values()].every((t) => t.deleted), "every task deleted on the server");
+    assert.equal(text.includes(KEY), false);
+    assert.doesNotMatch(text, /https?:\/\//);
+  } finally {
+    await mock.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("gen stops after one unit when the result has no url, with the outline, and still deletes that task", async () => {
+  const mock = await startYouCamMock({ key: KEY });
+  const dir = tempDir();
+  try {
+    mock.inject("GET", `/s2s/v2.0/task/${GEN_FEATURE}/`, 200, { status: 200, data: { task_status: "success", results: { image: { href: "x" } } } });
+    await assert.rejects(runGen({ live: quietLive(mock), count: 4, maxUnits: 4, save: join(dir, "c"), wait: noWait, out: () => {} }), (e) => e.code === "unexpected_shape" && e.outline === "{image:{href:string}}");
+    assert.equal(mock.apiRequests().filter((q) => q.method === "POST" && q.path.endsWith("/text-to-image/youcam")).length, 1, "no second candidate");
+    assert.ok([...mock.state.tasks.values()].every((t) => t.deleted));
+  } finally {
+    await mock.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("npm run probe -- gen, from a temp env file with a dummy key: one candidate saved, units and sha256 printed, no key or URL", async () => {
+  const mock = await startYouCamMock({ key: KEY, balance: 515 });
+  try {
+    await withEnvFile(mock, async ({ dir, env }) => {
+      const over = await run("scripts/probe.js", ["gen", "--count", "2", "--max-units", "1", "--save", "out"], env, dir);
+      assert.equal(over.code, 2);
+      assert.equal(over.stderr, "npm run probe: 2 candidates cost up to 2 units, over --max-units 1. Nothing was sent.\n");
+      const r = await run("scripts/probe.js", ["gen", "--count", "1", "--max-units", "1", "--save", "out"], env, dir);
+      assert.equal(r.code, 0, r.stderr);
+      const bytes = readFileSync(join(dir, "out", "candidate-1.jpg"));
+      assert.match(r.stdout, new RegExp(`candidate-1\\.jpg: image/jpeg, ${bytes.length} bytes, sha256 ${sha(bytes)}`));
+      assert.match(r.stdout, /units: balance 515 → 514 \(1 spent for 1 image; planned up to 1\)/);
+      assert.equal((r.stdout + r.stderr).includes(KEY), false);
+      assert.doesNotMatch(r.stdout, /https?:\/\//);
+    });
+  } finally {
+    await mock.close();
   }
 });

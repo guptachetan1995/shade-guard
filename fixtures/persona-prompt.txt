@@ -1,0 +1,8 @@
+# The sample shopper's face: one text-to-image request to the YouCam AI Image Generator V2.0
+# (model youcam-image-v2, size 1104*1472, prompt_extend false), sent by `npm run probe -- gen`.
+# The face it makes is of no real person. Its sha256 (this whole file) is the promptSha256 the
+# recording carries. One `key: value` per line; lines starting with # are comments.
+prompt: Photorealistic head-and-shoulders portrait of an adult woman in her thirties with medium-deep warm olive skin, bare skin with no makeup, natural visible skin texture and pores, looking straight at the camera, head level, neutral relaxed expression, mouth closed, hair pulled back off the forehead and away from the jawline and neck, no glasses, no jewellery, plain light grey background, soft even diffused daylight from the front, sharp focus, the face filling most of the frame
+negative_prompt: makeup, foundation, lipstick, glasses, hat, hands, airbrushed, wax-like or overly smooth skin, beauty filter, harsh shadows, side lighting, tilted head, profile, open mouth, teeth, text, watermark, logo, more than one person, illustration, cartoon
+# --variant bad-angle: the face-angle probe's photo (probe 6), never committed.
+prompt.bad-angle: Photorealistic head-and-shoulders portrait of an adult woman in her thirties with medium-deep warm olive skin, bare skin with no makeup, natural visible skin texture and pores, head turned 30° to her left, neutral relaxed expression, mouth closed, hair pulled back off the forehead and away from the jawline and neck, no glasses, no jewellery, plain light grey background, soft even diffused daylight from the front, sharp focus

@@ -1,5 +1,6 @@
 // Which provider answers, and how the page says so. The badge is always visible, so a visitor
 // can never mistake sample data for a YouCam reading. Browser-safe: no environment access.
+import { faceStampFor } from "./persona.js";
 
 export const MODE_INFO = Object.freeze({
   fake: {
@@ -40,9 +41,11 @@ export function chooseMode({ requested, hasKey, liveAvailable = false, recording
   return { mode: "fake", notice: null };
 }
 
-// recordedAt: the replay's recording date, which the banner names.
-export function describeMode(mode, notice = null, { recordedAt = null } = {}) {
-  const info = { id: mode, ...MODE_INFO[mode], notice };
+// recordedAt: the replay's recording date, which the banner names. persona: the recording's
+// persona block (src/persona.js), which decides the stamp on the replayed face.
+export function describeMode(mode, notice = null, { recordedAt = null, persona = null } = {}) {
+  const info = { id: mode, ...MODE_INFO[mode], notice, faceStamp: faceStampFor(mode, persona) };
+  if (mode === "replay" && persona) info.persona = persona;
   if (mode === "replay" && recordedAt) {
     info.recordedAt = recordedAt;
     info.banner = `Replay: recorded responses from real YouCam API calls made on ${recordedAt.slice(0, 10)}. This page makes no API calls.`;

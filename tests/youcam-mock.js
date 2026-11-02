@@ -7,15 +7,19 @@ import { fakePhoto } from "../src/providers/fake-photos.js";
 
 const GOOD = { lighting: "good", frontal: "good", area: "good", faceangle: "good" };
 
-const COSTS = { "skin-tone-analysis": 20, "skin-analysis": 9, "makeup-vto": 1 };
+const COSTS = { "skin-tone-analysis": 20, "skin-analysis": 9, "makeup-vto": 1, "text-to-image/youcam": 1 };
+// The AI Image Generator V2.0's request, as its docs page gives it (read 30 Oct 2026).
+const GEN_MODELS = ["youcam-image-v2"];
+const GEN_SIZES = ["1664*928", "1472*1104", "1328*1328", "1104*1472", "928*1664"];
 
 // key: the one key the mock accepts. keyError: the code a wrong key gets (no key at all always
 // gets InvalidAccessToken, as observed on the real server). pollsUntilDone: polls before a
 // task finishes, per feature or for all. engineError: { [feature]: code } for a finished task.
 // skinHex: the tone reading, or a function of the task's src_file_id (the default reproduces
-// the demo story's sample shopper).
-export async function startYouCamMock({ key, keyError = "InvalidApiKey", balance = 1000, pollsUntilDone = 1, engineError = {}, skinHex = "#B9947C" } = {}) {
-  const state = { requests: [], files: new Map(), tasks: new Map(), balance, seq: 0, injected: [] };
+// the demo story's sample shopper). genEngineErrors: how many text-to-image tasks, first ones
+// first, finish with an engine error before the rest succeed.
+export async function startYouCamMock({ key, keyError = "InvalidApiKey", balance = 1000, pollsUntilDone = 1, engineError = {}, skinHex = "#B9947C", genEngineErrors = 0 } = {}) {
+  const state = { requests: [], files: new Map(), tasks: new Map(), balance, seq: 0, injected: [], genErrorsLeft: genEngineErrors };
   let base = "";
 
   const send = (res, status, body, headers = {}) => {
@@ -44,6 +48,13 @@ export async function startYouCamMock({ key, keyError = "InvalidApiKey", balance
     return { url: `${base}/results/${task.taskId}.jpg` };
   }
 
+  // The generator's image is the size asked for, so a test can tell it from a render.
+  function resultImage(task) {
+    if (task.feature !== "text-to-image/youcam") return fakePhoto(`render:${task.taskId}`);
+    const [width, height] = task.body.size.split("*").map(Number);
+    return fakePhoto(`generated:${task.taskId}`, { width, height });
+  }
+
   function handle(req, res, body) {
     const url = new URL(req.url, base);
     const path = url.pathname;
@@ -67,7 +78,7 @@ export async function startYouCamMock({ key, keyError = "InvalidApiKey", balance
       const taskId = path.slice("/results/".length).replace(/\.jpg$/, "");
       if (!state.tasks.has(taskId)) return send(res, 404, "");
       res.writeHead(200, { "content-type": "image/jpeg" });
-      return res.end(Buffer.from(fakePhoto(`render:${taskId}`)));
+      return res.end(Buffer.from(resultImage(state.tasks.get(taskId))));
     }
     if (!path.startsWith("/s2s/")) return send(res, 404, "");
 
@@ -99,8 +110,24 @@ export async function startYouCamMock({ key, keyError = "InvalidApiKey", balance
       if (!task || task.deleted) return fail(res, 404, "InvalidTaskId");
       if (task.status === "running") return fail(res, 400, "OperationInvalid");
       task.deleted = true;
-      state.files.get(task.body.src_file_id).deleted = true;
+      if (task.body.src_file_id) state.files.get(task.body.src_file_id).deleted = true;
       return send(res, 200, { status: 200, data: {} });
+    }
+    if (req.method === "POST" && path === "/s2s/v2.0/task/text-to-image/youcam") {
+      const ok =
+        GEN_MODELS.includes(json.model) &&
+        typeof json.prompt === "string" && json.prompt && [...json.prompt].length <= 800 &&
+        (json.negative_prompt === undefined || (typeof json.negative_prompt === "string" && [...json.negative_prompt].length <= 500)) &&
+        (json.size === undefined || GEN_SIZES.includes(json.size));
+      if (!ok) return fail(res, 400, "InvalidParameters");
+      if (state.balance < COSTS["text-to-image/youcam"]) return fail(res, 400, "CreditInsufficiency");
+      const taskId = `task_${++state.seq}`;
+      state.tasks.set(taskId, { taskId, feature: "text-to-image/youcam", body: { size: "1664*928", ...json }, polls: 0, status: "running", deleted: false });
+      if (state.genErrorsLeft > 0) {
+        state.genErrorsLeft -= 1;
+        state.tasks.get(taskId).engineError = "error_nsfw_content_detected";
+      }
+      return send(res, 200, { status: 200, data: { task_id: taskId } });
     }
     let m = /^\/s2s\/v2\.0\/task\/([a-z-]+)$/.exec(path);
     if (req.method === "POST" && m) {
@@ -113,20 +140,20 @@ export async function startYouCamMock({ key, keyError = "InvalidApiKey", balance
       state.tasks.set(taskId, { taskId, feature, body: json, polls: 0, status: "running", deleted: false });
       return send(res, 200, { status: 200, data: { task_id: taskId } });
     }
-    m = /^\/s2s\/v2\.0\/task\/([a-z-]+)\/([^/]+)$/.exec(path);
+    m = /^\/s2s\/v2\.0\/task\/([a-z-]+(?:\/youcam)?)\/([^/]+)$/.exec(path);
     if (req.method === "GET" && m) {
       const task = state.tasks.get(decodeURIComponent(m[2]));
       if (!task || task.deleted || task.feature !== m[1]) return fail(res, 404, "InvalidTaskId");
       task.polls += 1;
       if (task.status === "running" && task.polls >= polls(task.feature)) {
-        if (engineError[task.feature]) task.status = "error";
+        if (engineError[task.feature] || task.engineError) task.status = "error";
         else {
           task.status = "success";
           state.balance -= COSTS[task.feature];
         }
       }
       if (task.status === "running") return send(res, 200, { status: 200, data: { task_status: "running" } });
-      if (task.status === "error") return send(res, 200, { status: 200, data: { task_status: "error", error: engineError[task.feature] } });
+      if (task.status === "error") return send(res, 200, { status: 200, data: { task_status: "error", error: task.engineError ?? engineError[task.feature] } });
       return send(res, 200, { status: 200, data: { task_status: "success", results: results(task) } });
     }
     if (req.method === "GET" && path === "/s2s/v1.0/client/credit") {

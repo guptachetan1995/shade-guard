@@ -19,6 +19,9 @@ import { buildPages } from "../scripts/build-pages.js";
 import { createApp } from "../src/app.js";
 import { runPlanner } from "../src/agent/planner.js";
 import { noWait, fixedClock } from "./helpers.js";
+import { generatedPersona } from "../scripts/persona-prompt.js";
+import { FACE_STAMP } from "../src/persona.js";
+import { describeMode } from "../src/modes.js";
 import { startYouCamMock } from "./youcam-mock.js";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -26,6 +29,7 @@ const KEY = "replay-test-key-never-real-41c2";
 const NO_KEY = { apiKey: null, apiBase: "https://api.example.invalid", unitCapPerCheck: 40, port: 0 };
 let dir;
 let recDir;
+let genDir;
 
 before(async () => {
   dir = mkdtempSync(join(tmpdir(), "shade-guard-replay-"));
@@ -34,6 +38,9 @@ before(async () => {
   try {
     const live = new YouCamProvider({ apiKey: KEY, apiBase: mock.url, pacer: { take: async () => {}, backoff() {} }, wait: noWait });
     await recordFixtures({ live, key: KEY, maxUnits: 90, photo: fakePhoto("sample-shopper"), lights: [fakePhoto("light-1"), fakePhoto("light-2")], outDir: recDir, wait: noWait });
+    // The same recording, but made with --generated-persona: the photo came from the generator.
+    genDir = join(dir, "recorded-generated");
+    await recordFixtures({ live, key: KEY, maxUnits: 90, photo: fakePhoto("sample-shopper"), lights: [fakePhoto("light-1"), fakePhoto("light-2")], outDir: genDir, persona: generatedPersona(), wait: noWait });
   } finally {
     await mock.close();
   }
@@ -126,4 +133,47 @@ test("the recording committed under fixtures/recorded/ replays the demo cart and
     assert.equal(JSON.stringify(transcript).includes("not_recorded"), false, `${caseId ?? "cart"}: every call was recorded`);
     assert.ok(Object.values(app.store.getCheck(s.result.checkId).lines).every((l) => l.draft), `${caseId ?? "cart"}: every line drafted`);
   }
+});
+
+test("a recording made from a generated face says so, and the page stamps that face AI-generated, not synthetic", async () => {
+  const persona = JSON.parse(readFileSync(join(genDir, "recording.json"), "utf8")).persona;
+  assert.deepEqual(persona, generatedPersona());
+  assert.match(persona.promptSha256, /^[0-9a-f]{64}$/);
+
+  // The local server's mode, over a real socket.
+  const recording = await loadRecordingFrom(genDir);
+  const { provider, mode } = providerFor({ ...NO_KEY, requestedMode: "replay" }, { recording });
+  assert.deepEqual([mode.badge, mode.faceStamp, mode.persona], ["REPLAY", "AI-generated · not a real person", persona]);
+  const app = await createApp({ provider, now: fixedClock(), wait: noWait });
+  const srv = await startServer({ app, mode });
+  try {
+    const state = await (await fetch(`${srv.url}/api/state`)).json();
+    assert.equal(state.mode.faceStamp, FACE_STAMP.generated);
+    assert.doesNotMatch(JSON.stringify(state.mode), /SYNTHETIC/i, "the generated face is never called synthetic");
+  } finally {
+    await srv.close();
+  }
+
+  // The static demo, built with that recording.
+  const built = buildPages(join(dir, "site-generated"), { recordingDir: genDir });
+  const { createPagesTransport } = await import(pathToFileURL(join(built.out, "src/pages-entry.js")).href);
+  const t = await createPagesTransport({ tick: false, read: fsReader(join(built.out, RECORDING_DIR)) });
+  assert.equal((await t.request("GET", "/api/state")).mode.faceStamp, FACE_STAMP.generated);
+});
+
+test("the canvas placeholder keeps its SYNTHETIC stamp in FAKE; a replay without a generated persona, and live, carry none", async () => {
+  assert.equal(FACE_STAMP.synthetic, "SYNTHETIC · not a person · not YouCam");
+  assert.equal(describeMode("fake").faceStamp, FACE_STAMP.synthetic);
+  const { mode } = providerFor({ ...NO_KEY, requestedMode: "replay" }, { recording: null });
+  assert.deepEqual([mode.badge, mode.faceStamp], ["FAKE", FACE_STAMP.synthetic]);
+  const plain = providerFor({ ...NO_KEY, requestedMode: "replay" }, { recording: await loadRecordingFrom(recDir) }).mode;
+  assert.deepEqual([plain.badge, plain.faceStamp, plain.persona], ["REPLAY", null, undefined]);
+  assert.equal(describeMode("live").faceStamp, null);
+  assert.equal(JSON.parse(readFileSync(join(recDir, "recording.json"), "utf8")).persona, undefined, "no flag, no persona block");
+
+  // The page draws the canvas stamp from the same constant, and stamps a replayed face only from the mode.
+  const face = readFileSync(join(ROOT, "public/face.js"), "utf8");
+  assert.match(face, /stamp\(ctx, FACE_STAMP\.synthetic\)/);
+  const page = readFileSync(join(ROOT, "public/app.js"), "utf8");
+  assert.match(page, /mode\(\)\.id === "replay" \? mode\(\)\.faceStamp : null/);
 });

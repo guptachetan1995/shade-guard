@@ -109,7 +109,7 @@ own cart and on their own order.
 
 **How sure is one photo?** Every card shows a ± band next to the ΔE numbers. The band is how
 far one face's reading moves when the light shifts: the largest ΔE00 between three readings
-of the sample shopper's photo, as taken and made 15% brighter and 15% darker (a brightness
+of the sample shopper's photo, as generated and made 15% brighter and 15% darker (a brightness
 shift standing in for a change of light). It is measured, not re-sent: an identical photo
 sent twice may well read the same, which would say nothing about the shopper's next photo.
 Until the sample shopper is recorded the band is a provisional 1.0, and the card says so. It
@@ -218,7 +218,9 @@ mode it chose and why.
   the date the banner names, served back with no network. It is the default once a recording
   is in `fixtures/recorded/sample-shopper/`, for `npm start` without a key and for the static
   demo. The check starts from the recorded sample shopper's photo, and the split face shows
-  the real Makeup Virtual Try-On renders that were downloaded during the recording. Anything
+  the real Makeup Virtual Try-On renders that were downloaded during the recording. The
+  sample shopper's face is generated with YouCam's own AI Image Generator V2.0: it is of no
+  real person, and the page stamps it and its renders "AI-generated · not a real person". Anything
   that was not recorded says so instead of making something up: a new photo gets "new photos
   need live mode", and an unrecorded request fails as `not_recorded`.
 - **LIVE** ("Real YouCam API calls"): real calls from the local server, using the key in your
@@ -313,7 +315,7 @@ Runs today, from a fresh clone:
 
 ```bash
 npm start                   # the store on sample data: http://127.0.0.1:5178
-npm test                    # 126 tests, all offline (the fake provider, and a loopback stand-in for the live API)
+npm test                    # 133 tests, all offline (the fake provider, and a loopback stand-in for the live API)
 npm run lint                # node --check on every file, plus this repo's own static rules
 ./verify.sh                 # the docs checks, then lint and tests
 npm run build:pages -- out  # the static demo in ./out, the same modules served unbundled
@@ -399,5 +401,6 @@ Each row gets its real date as the work lands, oldest first.
 
 ## License
 
-[MIT](./LICENSE). Fixture images carry their own licence lines in [ASSETS.md](./ASSETS.md);
-the sample shopper's photo, and so its line, is decided before the recording lands.
+[MIT](./LICENSE). Fixture images carry their own licence lines in [ASSETS.md](./ASSETS.md).
+The sample shopper's photo is an AI-generated portrait of no real person, made with the
+YouCam AI Image Generator V2.0; its line there applies once the recording lands.

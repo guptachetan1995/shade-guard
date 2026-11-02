@@ -6,23 +6,14 @@ below, and `./verify.sh` fails if an image directory has none.
 
 | Directory | What it holds | Licence |
 |---|---|---|
-| `fixtures/` | JSON only: the fictional catalogue, cart and return cases, authored for this demo. No images | MIT, with the code |
-| `fixtures/recorded/sample-shopper/` | Not recorded yet. It will hold the sample shopper's photo (`photo.jpg`), the YouCam Makeup Virtual Try-On renders made from it (`render-*.jpg`) and the recorded response bodies | **Open: decided before the recording is committed** (below). The renders are derived from the photo and carry its line; the response bodies are numbers and labels returned by the YouCam API for that photo |
+| `fixtures/` | The fictional catalogue, cart and return cases (JSON), authored for this demo, and the text-to-image prompt for the sample shopper's face (`persona-prompt.txt`). No images | MIT, with the code |
+| `fixtures/recorded/sample-shopper/` | `photo.jpg`: an AI-generated portrait of no real person, made `<date>` with the YouCam AI Image Generator V2.0 (`youcam-image-v2`; prompt and sha256 in `docs/api-notes.md`) and scaled to 768×1024; the ±15% brightness copies, the Makeup VTO renders `render-*.jpg` made from it, and the YouCam response bodies for that image | MIT, with the code, to the extent any rights exist. "AI-generated Content" under the YouCam (YCO) API Terms of Service (Sep 2026) §3.5.3 ("We do not claim any ownership of the content generated when you use our Service") and §11.3 ("Your use of the AI-generated content for commercial purposes is not restricted"). No real person, so no personal or biometric data. Not affiliated with or endorsed by Perfect Corp |
 | `docs/img/` | Three screenshots of this app for the README, taken from its static demo on the synthetic sample provider (badge FAKE). The face in them is the canvas placeholder, not a person and not a YouCam render | MIT, with the code |
 | `public/` | No image files. The synthetic placeholder face is drawn on a canvas by `public/face.js` and stamped "SYNTHETIC · not a person · not YouCam" | MIT, with the code |
 
-## Open: the persona photo
+## Decided: the persona photo
 
-Whose face is in the recording, and so in this repository, its static demo and its video, is
-decided at the first keyed sitting, in this order:
-
-1. **A synthetic portrait whose licence allows redistribution.** YouCam's own AI Image
-   Generator is evaluated first, on the same account: its unit cost and its output terms
-   (whether a generated image may be stored and redistributed).
-2. **The owner's own photo**, only on the owner's explicit yes.
-3. **The sponsor's sample images**, only if the YouCam API Terms of Service grant
-   redistribution.
-
-Never a photo of anyone else, and never a scraped face. When the source is decided, the
-`fixtures/recorded/sample-shopper/` line above names it and its licence, and the same line
-covers the renders.
+The sample shopper's face is generated with YouCam's own AI Image Generator V2.0
+(`youcam-image-v2`, from the prompt in `fixtures/persona-prompt.txt`) on the same account, so
+it is of no real person, and the `fixtures/recorded/sample-shopper/` line above applies once
+the recording exists, with `<date>` set to the day the face was generated.

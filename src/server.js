@@ -13,6 +13,7 @@ import { FakeYouCamProvider } from "./providers/youcam-fake.js";
 import { YouCamProvider } from "./providers/youcam-live.js";
 import { RecordedYouCamProvider } from "./providers/youcam-recorded.js";
 import { loadRecording, RECORDING_DIR } from "./recording.js";
+import { personaOf } from "./persona.js";
 
 export const HOST = "127.0.0.1";
 export const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -155,7 +156,7 @@ export function providerFor(config, { recording = null } = {}) {
     recordingAvailable: Boolean(recording),
   });
   if (id === "live") return { provider: new YouCamProvider({ apiKey: config.apiKey, apiBase: config.apiBase }), mode: describeMode(id, notice) };
-  if (id === "replay") return { provider: new RecordedYouCamProvider(recording), mode: describeMode(id, notice, { recordedAt: recording.recordedAt }) };
+  if (id === "replay") return { provider: new RecordedYouCamProvider(recording), mode: describeMode(id, notice, { recordedAt: recording.recordedAt, persona: personaOf(recording) }) };
   return { provider: new FakeYouCamProvider(), mode: describeMode(id, notice) };
 }
 

@@ -109,6 +109,7 @@ test("balance and feature costs are read from the free endpoints", () =>
       { feature: "skin-tone-analysis", units: 20 },
       { feature: "skin-analysis", units: 9 },
       { feature: "makeup-vto", units: 1 },
+      { feature: "text-to-image/youcam", units: 1 },
     ]);
     assert.deepEqual(
       mock.apiRequests().map((r) => [r.method, r.path, r.query]),

@@ -1,4 +1,5 @@
 // npm run record -- --max-units 90 --photo <base.jpg> --light <brighter.jpg> --light <dimmer.jpg> [--phase all|readings|renders]
+//   [--generated-persona [--persona-prompt <file>]]
 //
 // Records the sample shopper with the owner's key, for the replay demo:
 //   readings: three Facial Color Tones readings (the photo and two copies at ±15% brightness,
@@ -13,6 +14,10 @@
 // response bodies only, never request headers: every signed URL becomes a local image path or
 // is scrubbed, request ids are dropped, and every file written is scanned for the key's value
 // (the run fails, and removes what it wrote, if it is found).
+//
+// --generated-persona says the photo came from the YouCam AI Image Generator (npm run probe --
+// gen): recording.json then carries persona { source, model, promptSha256 }, the sha256 of the
+// prompt file it was made from, and the page stamps the face "AI-generated · not a real person".
 import { parseArgs } from "node:util";
 import { mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
@@ -31,6 +36,7 @@ import { loadFixtures } from "../src/fixtures.js";
 import { hexToLab } from "../src/color/lab.js";
 import { deltaE00 } from "../src/color/ciede2000.js";
 import { describeError, liveFromConfig } from "./live-cli.js";
+import { generatedPersona, PERSONA_PROMPT_FILE } from "./persona-prompt.js";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 export const DEFAULT_OUT = join(ROOT, "fixtures/recorded/sample-shopper");
@@ -236,7 +242,9 @@ function latencyLines(live) {
 }
 
 // live: a YouCamProvider holding the key; key: its value, only to scan the output for it.
-export async function recordFixtures({ live, key, phase = "all", maxUnits, photo, lights = [], outDir = DEFAULT_OUT, cap = 40, wait = realWait, log = () => {} }) {
+// persona: where the photo came from (generatedPersona()), written into recording.json; null
+// for a photo of a consenting person, which then carries no stamp.
+export async function recordFixtures({ live, key, phase = "all", maxUnits, photo, lights = [], outDir = DEFAULT_OUT, cap = 40, persona = null, wait = realWait, log = () => {} }) {
   if (!["all", "readings", "renders"].includes(phase)) throw new RecordRefusal(`--phase must be all, readings or renders, not ${phase}.`);
   if (!Number.isInteger(maxUnits) || maxUnits <= 0) throw new RecordRefusal("--max-units <n> is required, so the run can't spend more than you meant.");
   if (!photo) throw new RecordRefusal("--photo <path> is required: the pre-sized sample-shopper photo.");
@@ -281,6 +289,7 @@ export async function recordFixtures({ live, key, phase = "all", maxUnits, photo
       recordedAt,
       readingsRecordedAt: readings.recordedAt,
       photo: "photo.jpg",
+      ...(persona ? { persona } : {}),
       fileId: readings.fileId,
       featureCosts: costs,
       tasks: tasks.map((t) => scrub(t, localFor)),
@@ -307,6 +316,8 @@ function parse(argv) {
       phase: { type: "string", default: "all" },
       out: { type: "string" },
       cap: { type: "string", default: "40" },
+      "generated-persona": { type: "boolean" },
+      "persona-prompt": { type: "string" },
     },
   });
   return values;
@@ -332,6 +343,7 @@ async function main() {
       lights: args.light.map(read),
       outDir: args.out ? resolve(args.out) : DEFAULT_OUT,
       cap: Number.parseInt(args.cap, 10),
+      persona: args["generated-persona"] ? generatedPersona(resolve(args["persona-prompt"] ?? PERSONA_PROMPT_FILE)) : null,
       log: (line) => process.stdout.write(`${line}\n`),
     });
     process.stdout.write(
