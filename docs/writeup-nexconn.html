@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shade Guard write-up</title>
+<meta name="description" content="Shade Guard's project write-up for the Nexconn Build Challenge 2026: a buyer-store support chat on the Nexconn Chat SDK, where an agent drafts and only staff send, approve or close.">
+<!--
+  The project write-up for Reskilll's form, printed to one PDF (Letter) once every slot marked
+  {{FILL:…}} is filled; the slots and their sources are listed in docs/submission-nexconn.md.
+  Nothing here is loaded from the network, so it prints the same offline.
+-->
+<style>
+  :root {
+    --ink: #1d191c; --muted: #5d5660; --line: #e4dee0; --line-strong: #cbc2c7;
+    --berry: #7a2048; --berry-tint: #f6e6ed; --ok: #1f6b47; --ok-tint: #e3f2ea;
+    --duo: #2d4f8a; --duo-tint: #e7edf8; --surface-2: #faf8f8;
+    --display: "Didot", "Bodoni 72", "Bodoni MT", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0 auto; max-width: 7.4in; padding: 0 4px; background: #fff; color: var(--ink); font: 10pt/1.45 var(--sans); }
+  h1 { font: 400 25pt/1.05 var(--display); letter-spacing: -0.01em; margin: 6px 0 4px; }
+  h2 { font: 650 13pt/1.25 var(--sans); margin: 18px 0 6px; padding-top: 6px; border-top: 1.5px solid var(--ink); break-after: avoid; }
+  h3 { font: 650 10.5pt/1.3 var(--sans); margin: 10px 0 4px; break-after: avoid; }
+  p { margin: 0 0 7px; }
+  ul, ol { margin: 0 0 8px; padding-left: 20px; }
+  li { margin: 0 0 3px; }
+  code { font: 8.8pt/1.3 var(--mono); }
+  a { color: var(--berry); text-decoration: none; }
+  .lede { font-size: 11.5pt; color: var(--muted); margin: 0 0 10px; }
+  .kicker { font: 600 8.5pt/1.2 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--berry); margin: 0; }
+  .facts { border: 2px solid var(--berry); border-radius: 10px; padding: 10px 14px; margin: 10px 0 6px; background: var(--berry-tint); }
+  .facts dl { display: grid; grid-template-columns: 9.5em 1fr; gap: 4px 12px; margin: 0; }
+  .facts dt { font-weight: 650; }
+  .facts dd { margin: 0; overflow-wrap: anywhere; }
+  .facts .key { font: 650 10.5pt/1.3 var(--mono); }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 10px; font-size: 9pt; break-inside: auto; }
+  th, td { text-align: left; vertical-align: top; padding: 4px 6px; border-bottom: 1px solid var(--line-strong); }
+  th { font-weight: 650; border-bottom: 1.5px solid var(--ink); }
+  tr { break-inside: avoid; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+  .note { border-left: 3px solid var(--duo); padding: 4px 10px; background: var(--duo-tint); margin: 6px 0 10px; }
+  .codes dt { font: 650 9pt/1.3 var(--mono); }
+  .codes dd { margin: 0 0 4px 0; }
+  .codes { display: grid; grid-template-columns: 10.5em 1fr; gap: 2px 10px; margin: 4px 0 10px; }
+  figure { margin: 8px 0 12px; break-inside: avoid; }
+  figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 4px; }
+  svg text { font-family: var(--sans); }
+  .steps li { margin-bottom: 4px; }
+  .foot { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--line-strong); font-size: 8.5pt; color: var(--muted); }
+  .page-break { break-before: page; }
+</style>
+</head>
+<body>
+
+<p class="kicker">Nexconn Build Challenge 2026 · Track: Marketplace &amp; Support · Project write-up</p>
+<h1>Shade Guard</h1>
+<p class="lede">A buyer–store support chat for online beauty stores, on the Nexconn Chat SDK. A shopper
+with an opened foundation in the wrong shade talks to the store's returns desk; an agent drafts the
+reply with the colour numbers in it; only staff send, approve or close.</p>
+
+<div class="facts">
+  <dl>
+    <dt>Nexconn App Key</dt><dd class="key">y745wfm8ynetv</dd>
+    <dt>Data centre</dt><dd>Singapore</dd>
+    <dt>Live demo</dt><dd><a href="https://guptachetan1995.github.io/shade-guard/chat.html">guptachetan1995.github.io/shade-guard/chat.html</a> · no sign-in, nothing to install</dd>
+    <dt>Code (MIT)</dt><dd><a href="https://github.com/guptachetan1995/shade-guard">github.com/guptachetan1995/shade-guard</a></dd>
+    <dt>Video</dt><dd>PENDING(video-url) (PENDING(video-length))</dd>
+    <dt>SDK</dt><dd>Nexconn Chat SDK for the Web, <code>@nexconn/chat</code> and <code>@nexconn/engine</code> 26.2.1</dd>
+  </dl>
+</div>
+
+<table>
+  <tr><th style="width:44%">Judging criterion (weight)</th><th>Where to look</th></tr>
+  <tr><td>The demo works and the interaction is clear (50%)</td><td>The live demo; "What it does"; "Try it in 90 seconds"; "Measured on the live app"; the video</td></tr>
+  <tr><td>A new idea for a real communication problem (30%)</td><td>"Why we built it"; "The rule the chat enforces"</td></tr>
+  <tr><td>Traction and viability (20%)</td><td>"Traction, stated plainly"; "Can it become a product?"</td></tr>
+</table>
+
+<h2>Why we built it</h2>
+<p>Foundation is bought by colour, and colour is the one thing a product photo can't show on your
+skin. When an online shopper guesses wrong, the store hears about it in its support chat: "this is
+the wrong shade, and I've opened it." Opened cosmetics generally can't be resold for hygiene
+reasons, so refunding one means writing the unit off. An exchange to the right shade keeps
+the sale, but only if someone can say which shade is right, with numbers the shopper can check.</p>
+<p>That conversation is where an AI agent is both tempting and risky. It can read the order and
+do the colour arithmetic in a second. It can also promise a refund nobody approved, answer a
+question the shopper has already moved past, or push an exchange she never agreed to. Shade Guard
+puts the agent's speed into the draft and keeps every message that commits the store in a person's
+hands, and the chat itself enforces that: it is not a guideline staff are asked to follow.</p>
+
+<h2>What it does, in the order a judge sees it</h2>
+<ol class="steps">
+  <li>The live demo opens the returns desk on the left and the shopper's phone on the right. They are
+    two separate apps, two frames of one page, each connected to Nexconn as its own fictional demo user; they
+    share nothing but a Nexconn direct channel.</li>
+  <!-- if-two-pages: when the phone can't share the page, step 1 reads "The live demo opens the
+    returns desk, and the shopper's phone opens in a private window as the page explains. They are
+    two separate apps, ..." and "on the phone" below means that window. How the phone is opened
+    comes from docs/nexconn-notes.md; that layout is not built when this is written. -->
+  <li>As Maya (order O-5521, Skin Tint 220N), tap <b>Start a return: wrong shade, opened</b>. The
+    request reaches the desk over Nexconn, showing its server time and its message id.</li>
+  <li>The agent reads the thread and the shade reading stored on her order, and drafts an exchange
+    offer for 245W that lists the order's three closest shades: 245W at ΔE00 2.10, 250W at 3.51 and
+    her 220N at 5.00. The draft sits on the desk, marked <i>Not sent</i>.</li>
+  <li>As Maya, ask "is 250W any closer?" before staff send. Staff click <b>Send</b>: the desk reads
+    the thread back from Nexconn first, finds her message, and refuses (<code>thread_moved</code>).
+    Her question is now on screen, and the agent drafts again.</li>
+  <li>Staff answer in their own words from the numbers on screen (<b>Send note</b>), then send the
+    offer. On the phone it arrives as an offer card with an <b>Accept</b> button.</li>
+  <li><b>Approve exchange</b> before she accepts is refused (<code>not_accepted</code>). She taps
+    <b>Accept</b>; staff approve the exchange and close the case.</li>
+  <li>Switch the phone to Asha (order O-5530, no reading). Her return arrives in the desk's second
+    channel, and the desk marks her case unread. The agent can only draft an invitation to check her shade;
+    staff send it. Her own tap runs the check (on the app's sample face) and <b>Share my reading</b>
+    sends the result as a numbers-only card. The agent then drafts the exchange that reading
+    supports.</li>
+  <li>Reload either side: the thread comes back from Nexconn's message history, the closed case
+    included.</li>
+  <li><b>Try it as the agent</b>, under the desk's thread, sends the agent's own calls to send, note,
+    close and accept, and a draft with free text: each is refused at the chokepoint, and the message
+    count read from Nexconn is the same before and after.</li>
+</ol>
+
+<h2>Features that use the Nexconn SDK</h2>
+<table>
+  <tr><th style="width:22%">Feature</th><th style="width:33%">Nexconn SDK</th><th>Where you see it</th></tr>
+  <tr><td>Two sides, one channel</td><td><code>NCEngine.initialize</code> and <code>connect</code> once per side, each as its own user</td><td>The desk and the phone, each with its own connection badge</td></tr>
+  <tr><td>Direct channels</td><td>One direct channel per shopper–desk pair</td><td>The desk inbox: R-104 and R-107, each with its own thread; the desk counts unread messages per case from what it has shown</td></tr>
+  <!-- if-sdk-unread: when the counts come from the SDK's channel list, this cell reads "each with its
+    own thread and the unread count Nexconn's channel list reports". -->
+  <tr><td>Custom messages</td><td>Six types registered with <code>registerCustomMessages</code> before connect, stored on Nexconn</td><td>The return request, a note, the numbers-only reading card, the offer card with Accept, the acceptance, the case closed</td></tr>
+  <tr><td>Real-time receipt</td><td>The message handler</td><td>"via Nexconn, hh:mm:ss, …id" under every message</td></tr>
+  <tr><td>Remote history</td><td><code>createMessagesQuery</code></td><td>A reload rebuilds the thread; every staff send, note, approval and close re-reads the thread first</td></tr>
+  <tr><td>Connection status</td><td>The connection status handler</td><td>Connecting, Connected, Seat busy, Offline, SDK not loaded: each with words on screen (no busy seat was seen live: on 22 Nov the service let one demo user hold two connections at once)</td></tr>
+  <tr><td>Access tokens</td><td>Server API: access-token issue, user lookup, token expiry</td><td>No sign-in for judges: the demo connects 12 fictional users (4 seats of a desk and two shoppers)</td></tr>
+  <tr><td>Loading the SDK</td><td>Both packages from jsDelivr through an import map, each pinned by an integrity hash</td><td>Nothing installed; the SDK is never copied into the repository</td></tr>
+</table>
+
+<h2>The rule the chat enforces: the agent drafts, people decide</h2>
+<table>
+  <tr><th style="width:30%"></th><th style="width:32%">The agent</th><th>People</th></tr>
+  <tr><td>Read the support thread</td><td><code>read_thread</code>, as recorded from Nexconn</td><td>—</td></tr>
+  <tr><td>Draft a reply</td><td><code>draft_reply</code>: the text is composed in code from the reading's own numbers; it takes no free text</td><td>—</td></tr>
+  <tr><td>Send anything to the shopper</td><td><b>Never.</b> A draft never reaches Nexconn</td><td>Staff: <b>Send</b> (the draft) or <b>Send note</b> (their own words)</td></tr>
+  <tr><td>Share a shade reading</td><td><b>Never</b></td><td>The shopper: <b>Share my reading</b>, numbers only, never a photo</td></tr>
+  <tr><td>Accept an offer</td><td><b>Never</b></td><td>The shopper: <b>Accept</b> on the offer card</td></tr>
+  <tr><td>Approve an exchange or refund, close a case</td><td><b>Never</b></td><td>Staff, and an approval only after her Accept</td></tr>
+</table>
+<p>People's verbs are never registered as tools the agent can find, and the chokepoint refuses them
+for the agent if it calls them directly. An agent tool is handed no chat connection at all, and a
+lint rule keeps the agent's code from importing one. What is checked at the moment of each click,
+on Nexconn's own message ids and server times, never the local clock:</p>
+<dl class="codes">
+  <dt>thread_moved</dt><dd>The thread read from Nexconn holds a shopper message the draft, or the screen, had not seen. Nothing is sent; her message is shown; the agent can draft again.</dd>
+  <dt>not_accepted</dt><dd>An approval with no acceptance from her for the newest offer, an empty thread included.</dd>
+  <dt>offer_superseded</dt><dd>She can accept only the newest offer in the thread.</dd>
+  <dt>already_sent</dt><dd>A second click on Send, or a retry whose first answer was lost: the offer already on Nexconn is not sent twice.</dd>
+  <dt>thread_unverified</dt><dd>The desk could not read the thread from Nexconn, so it sends nothing.</dd>
+  <dt>chat_offline</dt><dd>The connection dropped; nothing is sent while offline.</dd>
+  <dt>wrong_actor</dt><dd>The agent calling a person's verb, or a shopper calling a staff verb.</dd>
+  <dt>smuggled_field</dt><dd>Free text slipped into the agent's draft call.</dd>
+</dl>
+<p>One round trip remains between the read and the send, and no chat service closes it. So after
+every staff send, the desk compares positions in the thread by server time and message id, and a
+shopper message that landed in between flags the case "sent over a message you had not seen".</p>
+
+<h2>How it is built</h2>
+<figure>
+<svg viewBox="0 0 720 300" width="100%" role="img" aria-label="The shopper's phone and the returns desk are two apps that share only a Nexconn direct channel. On the desk, the agent's tools have no chat connection; only staff verbs send. A token script holding the App Secret outside the browser gets access tokens from the Nexconn Server API for both sides.">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1d191c"/></marker>
+  </defs>
+  <!-- the phone -->
+  <rect x="8" y="10" width="190" height="180" rx="22" fill="#ffffff" stroke="#1d191c" stroke-width="3"/>
+  <text x="103" y="38" text-anchor="middle" font-size="14" font-weight="650" fill="#1d191c">Shopper's phone</text>
+  <text x="103" y="56" text-anchor="middle" font-size="11" fill="#5d5660">its own app, its own store</text>
+  <text x="24" y="84" font-size="11" fill="#1d191c">Her verbs, her taps only:</text>
+  <text x="24" y="102" font-size="11" fill="#7a2048">· Start a return</text>
+  <text x="24" y="119" font-size="11" fill="#7a2048">· Send</text>
+  <text x="24" y="136" font-size="11" fill="#7a2048">· Check my shade (sample face)</text>
+  <text x="24" y="153" font-size="11" fill="#7a2048">· Share my reading (numbers)</text>
+  <text x="24" y="170" font-size="11" fill="#7a2048">· Accept</text>
+  <!-- Nexconn -->
+  <rect x="246" y="40" width="200" height="120" rx="12" fill="#e7edf8" stroke="#2d4f8a" stroke-width="2"/>
+  <text x="346" y="66" text-anchor="middle" font-size="14" font-weight="650" fill="#2d4f8a">Nexconn</text>
+  <text x="346" y="88" text-anchor="middle" font-size="11" fill="#1d191c">a direct channel per</text>
+  <text x="346" y="103" text-anchor="middle" font-size="11" fill="#1d191c">shopper–desk pair</text>
+  <text x="346" y="123" text-anchor="middle" font-size="11" fill="#1d191c">six custom message types</text>
+  <text x="346" y="141" text-anchor="middle" font-size="11" fill="#1d191c">remote message history</text>
+  <line x1="200" y1="100" x2="243" y2="100" stroke="#1d191c" stroke-width="2" marker-start="url(#arr)" marker-end="url(#arr)"/>
+  <line x1="449" y1="100" x2="492" y2="100" stroke="#1d191c" stroke-width="2" marker-start="url(#arr)" marker-end="url(#arr)"/>
+  <!-- the desk -->
+  <rect x="494" y="10" width="218" height="230" rx="12" fill="#ffffff" stroke="#1d191c" stroke-width="2"/>
+  <text x="603" y="34" text-anchor="middle" font-size="14" font-weight="650" fill="#1d191c">Returns desk</text>
+  <text x="603" y="51" text-anchor="middle" font-size="11" fill="#5d5660">its own app, its own store</text>
+  <text x="603" y="72" text-anchor="middle" font-size="11" font-family="ui-monospace, Menlo, monospace" fill="#1d191c">invoke(tool, args, actor)</text>
+  <rect x="506" y="82" width="194" height="62" rx="8" fill="#faf8f8" stroke="#cbc2c7"/>
+  <text x="516" y="100" font-size="11" font-weight="650" fill="#1d191c">The agent</text>
+  <text x="516" y="117" font-size="11" fill="#1d191c">read_thread · draft_reply</text>
+  <text x="516" y="134" font-size="11" fill="#874a00">no chat in its context</text>
+  <rect x="506" y="152" width="194" height="78" rx="8" fill="#f6e6ed" stroke="#7a2048"/>
+  <text x="516" y="170" font-size="11" font-weight="650" fill="#7a2048">Staff verbs</text>
+  <text x="516" y="187" font-size="11" fill="#1d191c">Send · Send note</text>
+  <text x="516" y="204" font-size="11" fill="#1d191c">Approve · Close</text>
+  <text x="516" y="221" font-size="11" fill="#1d191c">each re-reads the thread first</text>
+  <!-- tokens -->
+  <rect x="8" y="240" width="200" height="52" rx="8" fill="#ffffff" stroke="#5d5660" stroke-dasharray="4 3"/>
+  <text x="108" y="261" text-anchor="middle" font-size="11" font-weight="650" fill="#1d191c">Token script (Node built-ins)</text>
+  <text x="108" y="279" text-anchor="middle" font-size="11" fill="#5d5660">App Secret stays in a file</text>
+  <line x1="210" y1="266" x2="267" y2="266" stroke="#5d5660" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="270" y="244" width="152" height="46" rx="8" fill="#e7edf8" stroke="#2d4f8a"/>
+  <text x="346" y="263" text-anchor="middle" font-size="11" fill="#2d4f8a">Nexconn Server API</text>
+  <text x="346" y="280" text-anchor="middle" font-size="10" fill="#5d5660">tokens, 12 demo users</text>
+  <line x1="296" y1="242" x2="168" y2="194" stroke="#5d5660" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+  <text x="246" y="212" text-anchor="middle" font-size="10" fill="#5d5660">token</text>
+  <line x1="424" y1="262" x2="492" y2="242" stroke="#5d5660" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+  <text x="462" y="276" text-anchor="middle" font-size="10" fill="#5d5660">token</text>
+</svg>
+<figcaption>The two sides share nothing but the Nexconn channel: a message exists on the desk only
+because Nexconn delivered it. If the SDK does not load or connect, the panes say so, and nothing is
+faked.</figcaption>
+</figure>
+<ul>
+  <li><b>One chokepoint.</b> Every button and every agent call goes through
+    <code>invoke(tool, args, actor)</code>: the same mutation, then a redraw. The chat connection is
+    handed only to people's verbs.</li>
+  <li><b>The SDK in the page, not in the repository.</b> <code>@nexconn/chat</code> and
+    <code>@nexconn/engine</code> 26.2.1 load at run time from jsDelivr through an import map, each
+    pinned by an integrity hash, under Nexconn's own licence. The repository stays MIT and copies no
+    SDK file.</li>
+  <li><b>Tokens.</b> A script on Node built-ins signs Server API calls with the App Secret, which
+    stays in a file outside the repository, to register the demo users and issue their tokens.</li>
+  <li><b>Nothing installed.</b> Node built-ins on the server and plain ES modules in the browser; the
+    only third-party code is the Nexconn SDK, which loads from jsDelivr at run time under Nexconn's
+    licence. 419 offline tests run against a fake chat service that has its own message
+    ids and server times, delayed delivery and paged history, so every refusal above has a test.</li>
+  <li><b>A deterministic planner, not a language model.</b> Every figure in a draft is the reading's
+    own number, which the evidence must match within 0.05 or the draft is refused.</li>
+  <li><b>The colour science is the original build's code:</b> sRGB to CIELAB to CIEDE2000, tested on
+    all 34 published CIEDE2000 reference pairs.</li>
+</ul>
+
+<h2>Measured on the live app</h2>
+<table>
+  <tr><th style="width:38%">What</th><th>Measured</th></tr>
+  <tr><td>First message across Nexconn between the two sides</td><td>22 Nov 2026</td></tr>
+  <tr><td>Send-to-arrival, desk to phone</td><td>a median of 223 ms from Nexconn's server send time to arrival on the other pane (218 to 356 ms over 45 notes sent 300 ms apart, desk to phone, Bengaluru to the Singapore data centre, read on the receiving machine's clock); the receiving pane had each note a median 143 ms after the sending pane's send call returned, both on one clock</td></tr>
+  <tr><td>WebSocket host the SDK connected to</td><td>wss://ws.sg-light-edge.com (navigation through dualstack-cloudcontrol.sg-light-edge.com)</td></tr>
+  <tr><td>A reload restored a custom message from remote history</td><td>22 Nov 2026</td></tr>
+  <tr><td>A second connection as the same demo user</td><td>No kick: two tabs on one seat both stayed Connected (22 Nov 2026)</td></tr>
+  <tr><td>How the two sides share the page</td><td>two frames of one page</td></tr>
+</table>
+
+<h2>Traction, stated plainly</h2>
+<p>On PENDING(mau-date) the Nexconn console showed <b>PENDING(mau)</b> active users for this app.
+That number is not people. Nexconn counts the unique user ids that connect, and the public demo
+shares 12 fictional seat ids (four seats, each a desk and two shoppers) among everyone who opens it,
+plus 2 ids registered for tests. However many judges open the demo, the count stays
+at those ids. No users were recruited and none are claimed.</p>
+
+<h2>Can it become a product?</h2>
+<ul>
+  <li><b>Who uses it.</b> The support desk of an online beauty or personal-care store that handles
+    wrong-shade returns in its support chat, and the shoppers on the other side.</li>
+  <li><b>What changes for them.</b> A question like "is 250W any closer?" gets a number from the
+    shopper's own reading instead of a guess. An opened unit can be offered as an exchange, with the
+    evidence on the order, instead of being refunded by default. The agent does the arithmetic and
+    the drafting and cannot commit the store: no send, approval or close happens without a person,
+    and no send goes out over a message staff have not seen.</li>
+  <li><b>What a store plugs in.</b> Its own chat on Nexconn (the SDKs cover web, iOS, Android and
+    Flutter); its order system, where the reading is stored as numbers; measured swatch colours for
+    its own ranges; and a live colour provider for the shade check. Shade Guard's YouCam provider is
+    written and has not yet called YouCam.</li>
+  <li><b>Who would pay, and what adopting it takes.</b> The intended buyer is the store, as an add-on
+    to the support chat it already runs, paid per support seat or per resolved return. Adopting it
+    replaces the public demo seats with signed-in shoppers, each with a Nexconn token issued by the
+    store's own server, and wires the approval to the store's returns system instead of a
+    simulation.</li>
+  <li><b>What the merchandiser already gets.</b> Every "no close match" reading is kept as numbers and
+    listed as a range gap in the merchant panel, so the store learns which shade its range lacks.</li>
+</ul>
+
+<h2>What existed before, and what was built for this challenge</h2>
+<p>Shade Guard was built from 30 Oct to 2 Nov 2026 for another hackathon (YouCam API) and was never
+submitted there. In the public repository that version ends at commit <code>5f35675</code>
+(2 Nov 2026); every later commit is work for this challenge.</p>
+<div class="two">
+  <div>
+    <h3>Existed before (built for YouCam, never submitted)</h3>
+    <ul>
+      <li>The fictional store, catalogue, cart, orders and return cases R-104 and R-107</li>
+      <li>CIEDE2000 colour science and the shade ranking</li>
+      <li>The <code>invoke</code> chokepoint, nine agent tools, seven human-only verbs, the deterministic planner</li>
+      <li>The shop's shade check on sample data, the privacy receipt, the returns desk, the merchant panel</li>
+      <li>The YouCam provider (tested against a local stand-in only; never called YouCam)</li>
+      <li>The static demo build and its tests</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Built for this challenge</h3>
+    <ul>
+      <li>The Nexconn Chat SDK in the page: import map, integrity pins, the adapter</li>
+      <li>The chat transport interface, its Nexconn adapter, and a fake service for the offline tests</li>
+      <li>Two agent tools (<code>read_thread</code>, <code>draft_reply</code>); six human verbs (<code>shopper_send</code>, <code>share_reading</code>, <code>accept_offer</code>, <code>send_reply</code>, <code>staff_note</code>, <code>close_case</code>); the re-checks that read Nexconn at the moment of use</li>
+      <li>The desk inbox and thread, the shopper's order chat, the reading and offer cards with Accept</li>
+      <li>The token and expiry scripts and the seats file</li>
+      <li>Tests for every chat refusal, this write-up, a new video</li>
+    </ul>
+  </div>
+</div>
+
+<h2>What this entry does not claim</h2>
+<ul>
+  <li><b>No users.</b> The active-user count is the demo's own fictional seat ids and test ids.</li>
+  <li><b>No real face reading.</b> The shade check runs on the app's synthetic sample face and says so
+    on screen.</li>
+  <li><b>No real store, money or stock.</b> The store, the orders, the shoppers and the approvals are
+    fictional; an approval is simulated, and after a reload an approved case shows as open again.</li>
+  <li><b>No language model.</b> The agent is a deterministic planner; every number in a draft is the
+    reading's own, composed in code.</li>
+  <li><b>No authenticated shopper.</b> The demo's seat tokens are public, so "her own Accept" means a
+    message from the seat's shopper user in that visit. The visit id keeps two honest visitors on one
+    seat apart; it does not stop a hostile one.</li>
+  <li><b>The live chat has an end date.</b> The demo tokens stay valid until Wed 2 Dec 2026, after
+    judging, when they are expired; from then the chat panes read Offline.</li>
+</ul>
+
+<h2>Try it in 90 seconds</h2>
+<ol class="steps">
+  <li>Open <a href="https://guptachetan1995.github.io/shade-guard/chat.html">guptachetan1995.github.io/shade-guard/chat.html</a>.
+    Wait for both badges to read Connected. If the page says the seat is busy, click <b>Open another
+    seat</b>.</li>
+  <!-- if-two-pages: when the phone does not share the page, this step also opens the shopper's
+    phone in a private window as the page explains, and the steps below say "the phone window". -->
+  <li>On the phone, tap <b>Start a return: wrong shade, opened</b>. Watch the request and the agent's
+    draft appear on the desk.</li>
+  <li>On the phone, write "is 250W any closer?" and send it. On the desk, click <b>Send</b>: it is
+    refused, and the agent drafts again.</li>
+  <li>On the desk, write a note in your own words and click <b>Send note</b>; then <b>Send</b> the
+    offer and click <b>Approve exchange</b>: refused until she accepts.</li>
+  <li>On the phone, tap <b>Accept</b>. On the desk, <b>Approve exchange</b>, then <b>Close case</b>.</li>
+  <li>Optional: <b>Switch to Asha's phone</b> for the case with no reading; reload either side; open
+    <b>Try it as the agent</b> on the desk.</li>
+</ol>
+<p>The code runs from a fresh clone with nothing to install: <code>npm test</code> runs every test
+offline, and <code>npm start -- --fake-chat</code> walks the same path on an offline stand-in that
+says on every pane that it is not Nexconn.</p>
+
+<p class="foot">Shade Guard · MIT licence · github.com/guptachetan1995/shade-guard · An independent
+entry to the Nexconn Build Challenge 2026, not affiliated with Nexconn or Reskilll. The store, its
+products, orders and shoppers, and the sample face are fictional.</p>
+
+</body>
+</html>

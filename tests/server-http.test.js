@@ -57,12 +57,12 @@ test("a wrong-role actor is refused: a shopper can't approve a refund, the agent
   assert.equal(app.store.getCase("R-107").status, "awaiting_check", "nothing changed");
 });
 
-test("tool discovery over HTTP lists the nine agent tools and no human verb", async () => {
+test("tool discovery over HTTP lists the eleven agent tools and no human verb", async () => {
   const r = await call("GET", "/api/tools");
   assert.equal(r.status, 200);
   const names = r.body.tools.map((t) => t.name);
-  assert.equal(names.length, 9);
-  for (const verb of ["start_check", "apply_draft", "keep_my_shade", "approve_exchange", "approve_refund", "set_unit_cap"]) {
+  assert.equal(names.length, 11);
+  for (const verb of ["start_check", "apply_draft", "keep_my_shade", "approve_exchange", "approve_refund", "set_unit_cap", "record_inbound"]) {
     assert.equal(names.includes(verb), false, verb);
   }
 });

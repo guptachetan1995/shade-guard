@@ -2,6 +2,7 @@
 // four API routes that all end in invoke() (plus the agent and preview routes in api.js).
 // Run directly (npm start), it reads its settings from src/config.js, the only env reader.
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join, normalize, sep } from "node:path";
@@ -14,14 +15,19 @@ import { YouCamProvider } from "./providers/youcam-live.js";
 import { RecordedYouCamProvider } from "./providers/youcam-recorded.js";
 import { loadRecording, RECORDING_DIR } from "./recording.js";
 import { personaOf } from "./persona.js";
+import { FakeChatServer } from "./chat/fake-transport.js";
+import { createFakeChatRoutes } from "./chat/fake-http.js";
+import { seatsFileOf } from "./chat/seats.js";
 
 export const HOST = "127.0.0.1";
+const FAKE_CHAT_DELAY_MS = 600;
 export const MAX_BODY_BYTES = 2 * 1024 * 1024;
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 
 // Never served: the env reader and the server itself stay on this machine.
 const SERVER_ONLY = new Set(["src/config.js", "src/server.js"]);
 const STATIC_DIRS = ["public/", "src/", "fixtures/"];
+const PAGES = new Set(["index.html", "chat.html"]);
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -32,6 +38,29 @@ const TYPES = {
   ".jpg": "image/jpeg",
 };
 const CSP = "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'";
+// The SDK's own path on the CDN, and nothing else there: chat.html's import map names only URLs under it.
+const SDK_SOURCE = "https://cdn.jsdelivr.net/npm/@nexconn/";
+export const SEATS_PATH = "/nexconn-seats.json";
+
+// chat.html's policy. The page holds two same-origin iframes (the desk and the shopper's phone), so
+// it, and the side pages it frames, may be framed by their own origin and by nothing else; its
+// inline import map runs by its hash. With a Nexconn seats config the pinned SDK may load from
+// jsDelivr and connect out: connect-src is wide (https: and wss:) because the SDK's hosts, its
+// WebSocket host above all, are UNVERIFIED until the live probe records them, and is to be narrowed
+// to those hosts afterwards. GitHub Pages sends no policy at all.
+export function chatCsp(html, { nexconn = false } = {}) {
+  const map = /<script type="importmap">([\s\S]*?)<\/script>/.exec(html);
+  const hash = map ? ` 'sha256-${createHash("sha256").update(map[1]).digest("base64")}'` : "";
+  return [
+    "default-src 'self'",
+    "img-src 'self' data: blob:",
+    "style-src 'self'",
+    `script-src 'self'${hash}${nexconn ? ` ${SDK_SOURCE}` : ""}`,
+    `connect-src 'self'${nexconn ? " https: wss:" : ""}`,
+    ...(nexconn ? ["worker-src 'self' blob:"] : []),
+    "frame-ancestors 'self'",
+  ].join("; ");
+}
 
 function send(res, status, body, headers = {}) {
   res.writeHead(status, { "x-content-type-options": "nosniff", ...headers });
@@ -60,7 +89,7 @@ function readBody(req) {
   });
 }
 
-async function serveStatic(req, res, root) {
+async function serveStatic(req, res, root, { nexconn = false } = {}) {
   const { pathname } = new URL(req.url, "http://local.invalid");
   let rel;
   try {
@@ -68,17 +97,43 @@ async function serveStatic(req, res, root) {
   } catch {
     return send(res, 400, "Bad path", { "content-type": "text/plain" });
   }
-  const allowed = (rel === "index.html" || STATIC_DIRS.some((d) => rel.startsWith(d))) && !rel.includes("..") && !SERVER_ONLY.has(rel) && TYPES[extname(rel)];
+  const allowed = (PAGES.has(rel) || STATIC_DIRS.some((d) => rel.startsWith(d))) && !rel.includes("..") && !SERVER_ONLY.has(rel) && TYPES[extname(rel)];
   if (!allowed) return send(res, 404, "Not found", { "content-type": "text/plain" });
   try {
     const bytes = await readFile(join(root, rel));
-    send(res, 200, bytes, { "content-type": TYPES[extname(rel)], "content-security-policy": CSP, "cache-control": "no-cache" });
+    const csp = rel === "chat.html" ? chatCsp(bytes.toString("utf8"), { nexconn }) : CSP;
+    send(res, 200, bytes, { "content-type": TYPES[extname(rel)], "content-security-policy": csp, "cache-control": "no-cache" });
   } catch {
     send(res, 404, "Not found", { "content-type": "text/plain" });
   }
 }
 
-export function createHttpServer({ api, root = ROOT }) {
+// A browser sends Origin on every cross-origin POST. A POST that names an origin other than this
+// server's own is a page somewhere else using the owner's browser to press buttons here (the human
+// verbs run as 'staff' on a local page), so it is refused. No Origin at all is a tool, not a page.
+function fromAnotherOrigin(req) {
+  const origin = req.headers.origin;
+  if (origin === undefined) return false;
+  try {
+    const u = new URL(origin);
+    return !(u.protocol === "http:" && u.host === req.headers.host);
+  } catch {
+    return true;
+  }
+}
+
+// A body must say it is JSON: a cross-site form or text/plain post can't carry one without a
+// preflight, and is not something this server's pages ever send.
+function declaresNoJson(req) {
+  const type = req.headers["content-type"];
+  if (type !== undefined) return type.split(";")[0].trim().toLowerCase() !== "application/json";
+  return Number(req.headers["content-length"] ?? 0) > 0 || req.headers["transfer-encoding"] !== undefined;
+}
+
+// nexconnSeats: a parsed seats config (src/chat/seats.js) to serve to this machine's chat page at
+// /nexconn-seats.json, or null. It carries demo tokens and the App Key, never the App Secret.
+export function createHttpServer({ api, root = ROOT, fakeChat = null, nexconnSeats = null }) {
+  const fakeRoutes = fakeChat ? createFakeChatRoutes(fakeChat) : null;
   return createServer(async (req, res) => {
     // A page on another origin that rebinds a hostname to 127.0.0.1 still sends its own Host.
     const host = (req.headers.host ?? "").replace(/:\d+$/, "");
@@ -87,10 +142,15 @@ export function createHttpServer({ api, root = ROOT }) {
     const isApi = req.url.startsWith("/api/");
     if (!isApi) {
       if (req.method !== "GET" && req.method !== "HEAD") return send(res, 405, "Method not allowed");
-      return serveStatic(req, res, root);
+      if (new URL(req.url, "http://local.invalid").pathname === SEATS_PATH) {
+        return nexconnSeats ? sendJson(res, 200, seatsFileOf(nexconnSeats)) : send(res, 404, "Not found", { "content-type": "text/plain" });
+      }
+      return serveStatic(req, res, root, { nexconn: Boolean(nexconnSeats) });
     }
     let body = null;
     if (req.method === "POST") {
+      if (fromAnotherOrigin(req)) return sendJson(res, 403, { ok: false, error: { code: "bad_origin", message: "This server takes POSTs only from its own pages." } });
+      if (declaresNoJson(req)) return sendJson(res, 415, { ok: false, error: { code: "unsupported_media_type", message: "A POST body must be application/json." } });
       let text;
       try {
         text = await readBody(req);
@@ -107,7 +167,8 @@ export function createHttpServer({ api, root = ROOT }) {
       return sendJson(res, 405, { ok: false, error: { code: "method_not_allowed", message: `${req.method} is not supported.` } });
     }
     try {
-      const { status, body: out } = await api.handle(req.method, req.url, body);
+      const handler = fakeRoutes && req.url.startsWith("/api/fake-chat/") ? fakeRoutes : api;
+      const { status, body: out } = await handler.handle(req.method, req.url, body);
       sendJson(res, status, out);
     } catch {
       sendJson(res, 500, { ok: false, error: { code: "internal_error", message: "The server hit an unexpected error." } });
@@ -115,9 +176,11 @@ export function createHttpServer({ api, root = ROOT }) {
   });
 }
 
-export async function startServer({ app, mode, port = 0, root = ROOT }) {
+// fakeChat: a FakeChatServer to expose at /api/fake-chat/* (the offline walk), or null.
+// nexconnSeats: a parsed Nexconn seats config for the chat page, or null (never with fakeChat).
+export async function startServer({ app, mode, port = 0, root = ROOT, fakeChat = null, nexconnSeats = null }) {
   const api = createApi({ app, mode });
-  const server = createHttpServer({ api, root });
+  const server = createHttpServer({ api, root, fakeChat, nexconnSeats: fakeChat ? null : nexconnSeats });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, HOST, resolve);
@@ -160,6 +223,21 @@ export function providerFor(config, { recording = null } = {}) {
   return { provider: new FakeYouCamProvider(), mode: describeMode(id, notice) };
 }
 
+// The seats config the chat page gets: none with --fake-chat (the fake only then), else the seats file
+// NEXCONN_SEATS_FILE names or the default one, when it exists. A broken file is said and skipped.
+async function nexconnSeatsFor({ fakeChat, out }) {
+  if (fakeChat) return null;
+  const { defaultNexconnSeatsFile, nexconnSeatsFileSetting, readNexconnSeats } = await import("./config.js");
+  const path = nexconnSeatsFileSetting() ?? defaultNexconnSeatsFile();
+  if (!existsSync(path)) return null;
+  try {
+    return { seats: readNexconnSeats(path), path };
+  } catch (e) {
+    out(`Support chat: ${e.message} The chat page will say it has no chat service.\n`);
+    return null;
+  }
+}
+
 async function main() {
   const { loadConfig } = await import("./config.js");
   const config = loadConfig();
@@ -167,8 +245,13 @@ async function main() {
   const { provider, mode } = providerFor(config, { recording });
   const notice = mode.notice;
   const app = await createApp({ provider, unitCapPerCheck: config.unitCapPerCheck });
-  const { url } = await startServer({ app, mode, port: config.port });
+  const fakeChat = process.argv.includes("--fake-chat") ? new FakeChatServer({ deliveryDelayMs: FAKE_CHAT_DELAY_MS }) : null;
+  const out = (s) => process.stdout.write(s);
+  const nexconn = await nexconnSeatsFor({ fakeChat, out });
+  const { url } = await startServer({ app, mode, port: config.port, fakeChat, nexconnSeats: nexconn?.seats ?? null });
   process.stdout.write(`Shade Guard: ${url}\nMode: ${mode.badge} (${mode.label})\n${notice ? `${notice}\n` : ""}`);
+  if (fakeChat) process.stdout.write(`Support chat on a FAKE in-memory service (offline, no Nexconn): ${url}/chat.html\n`);
+  if (nexconn) out(`Support chat on Nexconn (App Key ${nexconn.seats.appKey}, area ${nexconn.seats.area}, ${nexconn.seats.seats.length} seats from ${nexconn.path}): ${url}/chat.html\n`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

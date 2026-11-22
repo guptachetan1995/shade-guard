@@ -61,7 +61,7 @@ test("the built page runs the demo story in this tab: shop, returns desk and mer
   assert.equal((await t.request("GET", "/api/state")).state.cart.lines[0].shadeCode, "220N", "a response is a copy, never the live store");
 
   const tools = await t.request("GET", "/api/tools");
-  assert.equal(tools.tools.length, 9);
+  assert.equal(tools.tools.length, 11);
 
   // Beats 1-7: the shopper starts, the agent drafts, the shopper decides, the receipt.
   const s = await invoke("start_check", { photo: toBase64(fakePhoto("sample-shopper")), capture: "upload" }, "shopper");

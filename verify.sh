@@ -28,7 +28,7 @@ echo "== .env stays out of the published repo =="
 # publish.sh runs git add -A in a fresh copy where the monorepo's root .gitignore does not
 # apply, so this entry's own .gitignore is the only thing keeping a local .env private.
 grep -qx '.env' .gitignore || fail ".gitignore does not ignore .env"
-if grep -nE '^YOUCAM_API_KEY=.+' .env.example; then
+if grep -nE '^(YOUCAM_API_KEY|NEXCONN_APP_SECRET)=.+' .env.example; then
   fail ".env.example carries a key value; it must stay empty"
 fi
 
@@ -52,6 +52,11 @@ fi
 echo "== the human-only gate is named, not just described =="
 grep -qi 'never registered as a tool' README.md ||
   fail "README.md no longer states that the human verbs are never registered as a tool"
+
+echo "== the Nexconn names exist in .env.example, and the secret has no value there =="
+for n in NEXCONN_APP_KEY NEXCONN_AREA NEXCONN_API_HOST NEXCONN_APP_SECRET; do
+  grep -q "^$n=" .env.example || fail ".env.example does not name $n"
+done
 
 echo "== the README's status line matches reality =="
 if [ -f package.json ]; then
@@ -131,6 +136,7 @@ if [ "$in_monorepo" = true ]; then
     "12. Owner steps"
     "13. Risks"
     "14. Submission checklist"
+    "15. Nexconn Build Challenge 2026"
   )
   found=()
   while IFS= read -r line; do
@@ -149,10 +155,30 @@ if [ "$in_monorepo" = true ]; then
     i=$((i + 1))
   done
 
-  echo "== SPEC.md ends with the submission checklist =="
-  last="${found[$((${#found[@]} - 1))]}"
-  [ "$last" = "## 14. Submission checklist" ] ||
-    fail "the last section of SPEC.md is '$last', not the submission checklist"
+  # §14 is the YouCam checklist; §15, the Nexconn re-entry, ends with Reskilll's own checklist,
+  # so the file still ends with the checklist of the hackathon it is being built for.
+  echo "== SPEC.md ends with the Nexconn submission checklist =="
+  last_sub="$(grep -E '^### ' SPEC.md | tail -n 1)"
+  [ "$last_sub" = "### 15.13 Submission checklist (Reskilll, verbatim)" ] ||
+    fail "the last subsection of SPEC.md is '$last_sub', not the Nexconn submission checklist"
+
+  echo "== the Nexconn checklist and criteria are Reskilll's own words (read 6 Nov 2026) =="
+  nexconn_items=(
+    "The app must show real, measurable SDK usage. The Call SDK is optional. Judges disqualify projects that do not use the Chat SDK."
+    "Tell us why you built the app and which problem it solves. Name the features that use the Nexconn SDK. Include your Nexconn App Key."
+    "A video that shows your main features working. Use a YouTube, Vimeo, Loom or Google Drive link. Make sure that anyone with the link can watch it."
+    "A live URL for a website, or a direct download link for an app."
+    "A public GitHub repository."
+    "Yes, but you must add a real Nexconn integration during the challenge. Tell us which parts existed before and which parts you built for this challenge."
+    "One submission per team."
+    "The demo works fully and runs smoothly. The interface is clean, and the interaction is clear and easy to understand."
+    "Judges look at how new the idea is. They also look at whether it solves a real communication problem or adds a new, interesting interaction."
+    "Judges look at traction and viability. They count early users as active users on Nexconn. They also look at whether the app can become a real product."
+  )
+  for item in "${nexconn_items[@]}"; do
+    grep -qF -- "$item" SPEC.md || fail "section 15 does not quote: $item"
+    echo "  ok: ${item:0:60}…"
+  done
 
   echo "== the checklist is the rules' own words (live-checked 28 Sep 2026) =="
   items=(
@@ -203,6 +229,42 @@ if [ -f package.json ]; then
   ' || fail "package.json declares dependencies; this entry installs nothing"
   [ ! -e package-lock.json ] || fail "package-lock.json exists, but there is nothing to lock"
   [ ! -e node_modules ] || fail "node_modules exists, but this entry installs nothing"
+
+  echo "== the chat's six message types register with the typed keys, never the docs' misspelling =="
+  node --input-type=module -e '
+    import { registrationObjects } from "./src/chat/messages.js";
+    const regs = registrationObjects();
+    const want = ["SG:Note", "SG:ReturnRequest", "SG:Reading", "SG:Offer", "SG:OfferAccepted", "SG:CaseClosed"];
+    if (JSON.stringify(regs.map((r) => r.messageType)) !== JSON.stringify(want)) { console.error("registered types differ"); process.exit(1); }
+    for (const r of regs) {
+      if (Object.keys(r).sort().join() !== "isCounted,isPersisted,messageType" || r.isPersisted !== true) { console.error("bad registration " + r.messageType); process.exit(1); }
+    }
+  ' || fail "the chat's custom message registrations are wrong"
+
+  echo "== every refusal and flag the thread's verbs name has a test that expects it =="
+  # The chat's refusals are the contract of the staff screen: a code nobody tests is a code nobody
+  # knows still works. The list is read from the source, so a refusal added later is held to the same
+  # rule: every code the chat verbs and the agent's thread tools refuse with, and the few that are
+  # not a refuse() call. A test counts only when the quoted code stands on a line that also says
+  # code, error or expected (an assertion), not when a title or a comment merely mentions it.
+  codes="$(grep -ohE 'refuse\("[a-z_]+"' src/chat-verbs.js src/thread-tools.js | sed -E 's/refuse\("//; s/"$//')"
+  [ "$(printf '%s\n' "$codes" | sort -u | wc -l | tr -d ' ')" -ge 30 ] || fail "found fewer than 30 refusal codes in the chat verbs; the source scan is broken"
+  for code in $(printf '%s\n' "$codes" wrong_actor smuggled_field send_failed | sort -u); do
+    grep -hE "[\"']$code[\"']" tests/*.test.js | grep -qiE 'code|expected|error' || fail "no test asserts $code"
+  done
+  # crossed is a flag on the thread, not a refusal.
+  grep -qE 'assert.*\.crossed' tests/*.test.js || fail "no test asserts the crossed flag"
+  echo "  ok"
+
+  echo "== the static build carries no fake chat service =="
+  site_parent="$(mktemp -d)"
+  npm run --silent build:pages -- "$site_parent/site" > /dev/null
+  if grep -rliE 'fake[- ]chat|FakeChat|fake-(transport|client|http)' "$site_parent/site"; then
+    rm -rf "$site_parent"
+    fail "the static build carries the fake chat service"
+  fi
+  rm -rf "$site_parent"
+  echo "  ok"
 
   echo "== Running linter =="
   npm run --silent lint

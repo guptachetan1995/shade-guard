@@ -17,15 +17,32 @@ const AGENT_TOOLS = [
   "list_return_cases",
   "draft_return_resolution",
   "get_unit_budget",
+  "read_thread",
+  "draft_reply",
 ];
-const VERBS = { start_check: "shopper", apply_draft: "shopper", keep_my_shade: "shopper", approve_exchange: "staff", approve_refund: "staff", set_unit_cap: "merchant", stop_waiting: "shopper" };
+const VERBS = {
+  start_check: "shopper",
+  apply_draft: "shopper",
+  keep_my_shade: "shopper",
+  approve_exchange: "staff",
+  approve_refund: "staff",
+  set_unit_cap: "merchant",
+  stop_waiting: "shopper",
+  record_inbound: "nexconn",
+  shopper_send: "shopper",
+  share_reading: "shopper",
+  accept_offer: "shopper",
+  send_reply: "staff",
+  staff_note: "staff",
+  close_case: "staff",
+};
 
-test("the registry holds exactly the nine agent tools, and tool discovery lists only them", () => {
+test("the registry holds exactly the eleven agent tools, and tool discovery lists only them", () => {
   assert.deepEqual(TOOLS.map((t) => t.name), AGENT_TOOLS);
   assert.deepEqual(listTools().map((t) => t.name), AGENT_TOOLS);
 });
 
-test("the seven human verbs are absent from the registry and from tool discovery", () => {
+test("the human verbs are absent from the registry and from tool discovery", () => {
   assert.deepEqual(Object.fromEntries(HUMAN_VERBS.map((v) => [v.name, v.actor])), VERBS);
   const registered = new Set(TOOLS.map((t) => t.name));
   const discovered = new Set(listTools().map((t) => t.name));
@@ -55,6 +72,13 @@ test("every human verb refuses the agent, even when called directly, and changes
     approve_refund: { caseId: "R-104" },
     set_unit_cap: { unitsPerCheck: 1000 },
     stop_waiting: { checkId },
+    record_inbound: { messageId: "fm_1", type: "SG:Note", senderUserId: "x", sentTime: 1, content: {} },
+    shopper_send: { kind: "note", text: "hi" },
+    share_reading: { checkId, caseId: "R-107" },
+    accept_offer: { caseId: "R-104", draftId: "d_01" },
+    send_reply: { caseId: "R-104", draftId: "d_01", seen: "0" },
+    staff_note: { caseId: "R-104", text: "hi", seen: "" },
+    close_case: { caseId: "R-104", seen: "", reason: "resolved" },
   };
   for (const [verb, args] of Object.entries(calls)) {
     const r = await app.invoke(verb, args, AGENT);

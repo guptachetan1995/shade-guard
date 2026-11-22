@@ -1,5 +1,6 @@
-// The nine agent tools: the registry the agent can discover and call. The seven human-only
-// verbs live in human-verbs.js, which this file never imports. Every tool runs only through
+// The agent tools: the registry the agent can discover and call (nine for the shop and the
+// returns desk, two for the support thread in thread-tools.js). The human-only verbs live in
+// human-verbs.js, which this file never imports. Every tool runs only through
 // invoke(), which checks the actor, the arguments and the unit cap first.
 import { hexToLab, hueAngle, chroma, round } from "./color/lab.js";
 import {
@@ -23,6 +24,7 @@ import { chargeUnits } from "./store.js";
 import { closeCheck, cartCheckSettled, returnCheckDeadEnded } from "./check-lifecycle.js";
 import { isRetake, messageFor, YouCamError } from "./providers/errors.js";
 import { refuse } from "./refusal.js";
+import { THREAD_TOOLS } from "./thread-tools.js";
 
 const CITE_TOLERANCE = 0.05 + 1e-9;
 export const SKIN_ANALYSIS_ACTIONS = ["skin_type", "oiliness", "moisture", "redness"];
@@ -604,6 +606,7 @@ export const TOOLS = Object.freeze([
   list_return_cases,
   draft_return_resolution,
   get_unit_budget,
+  ...THREAD_TOOLS,
 ]);
 
 // What tool discovery (GET /api/tools) serves: names, descriptions and arguments only.
