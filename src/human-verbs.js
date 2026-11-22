@@ -1,10 +1,12 @@
-// The seven human-only verbs. They are never registered as agent tools: tools.js never imports
-// this file, tool discovery never lists them, and invoke() refuses each one for every actor
-// but its own (the agent included).
+// The human-only verbs: the seven of the shop and the returns desk, plus the chat's (src/chat-verbs.js).
+// They are never registered as agent tools: tools.js never imports this file, tool discovery never
+// lists them, and invoke() refuses each one for every actor but its own (the agent included).
 import { checkPhoto, PhotoError } from "./photo-check.js";
 import { fromBase64 } from "./providers/fake-photos.js";
 import { closeCheck, cartCheckSettled, stillWorkingTasks, STILL_WORKING_MS } from "./check-lifecycle.js";
 import { refuse } from "./refusal.js";
+import { CHAT_VERBS, checkThreadForApproval } from "./chat-verbs.js";
+import { isClosed } from "./threads.js";
 
 const MAX_UNIT_CAP = 1000;
 
@@ -148,16 +150,24 @@ function mustOpenCase(store, caseId) {
   const rcase = store.getCase(caseId);
   if (!rcase) refuse("unknown_case", `No return case ${caseId} exists.`);
   if (rcase.status === "exchange_approved" || rcase.status === "refund_approved") refuse("case_closed", `${caseId} is already ${rcase.status}.`);
+  if (isClosed(store.state.threads[caseId])) refuse("case_closed", `${caseId} was closed by staff in the chat.`);
   return rcase;
 }
+
+// seen: for a case with a chat thread, the id of the newest message the staff screen showed (an empty
+// string for an empty thread), the same as close_case's. The returns desk's old cases have no thread
+// and take only a caseId.
+const SEEN_ARG = { type: "string", description: "For a case with a chat thread: the id of the newest message the screen showed, or an empty string for an empty thread." };
 
 const approve_exchange = {
   name: "approve_exchange",
   actor: "staff",
-  args: { caseId: { type: "string", required: true } },
-  run({ caseId }, { store }) {
+  args: { caseId: { type: "string", required: true }, seen: SEEN_ARG },
+  async run({ caseId, seen }, ctx) {
+    const { store } = ctx;
     const rcase = mustOpenCase(store, caseId);
     if (rcase.draft?.resolution !== "exchange") refuse("no_exchange_draft", `${caseId} has no drafted exchange to approve.`);
+    await checkThreadForApproval(ctx, rcase, "exchange", seen);
     const shade = store.getShade(rcase.productId, rcase.draft.shadeCode);
     if (shade) shade.stock -= 1;
     rcase.status = "exchange_approved";
@@ -169,9 +179,11 @@ const approve_exchange = {
 const approve_refund = {
   name: "approve_refund",
   actor: "staff",
-  args: { caseId: { type: "string", required: true } },
-  run({ caseId }, { store }) {
+  args: { caseId: { type: "string", required: true }, seen: SEEN_ARG },
+  async run({ caseId, seen }, ctx) {
+    const { store } = ctx;
     const rcase = mustOpenCase(store, caseId);
+    await checkThreadForApproval(ctx, rcase, "refund", seen);
     rcase.status = "refund_approved";
     // Simulated: no real money exists anywhere in this entry.
     rcase.approval = { verb: "approve_refund", actor: "staff", at: store.now(), withDraft: rcase.draft?.resolution === "refund", simulated: true };
@@ -211,4 +223,4 @@ const stop_waiting = {
   },
 };
 
-export const HUMAN_VERBS = Object.freeze([start_check, apply_draft, keep_my_shade, approve_exchange, approve_refund, set_unit_cap, stop_waiting]);
+export const HUMAN_VERBS = Object.freeze([start_check, apply_draft, keep_my_shade, approve_exchange, approve_refund, set_unit_cap, stop_waiting, ...CHAT_VERBS]);

@@ -11,7 +11,7 @@ const ACTOR_REFUSALS = new Set(["unknown_actor", "wrong_actor"]);
 // tasks that were still running at close, so a "cleanup pending" receipt settles within seconds.
 export const TICK_MS = 10_000;
 const INVOKE_FIELDS = ["tool", "args", "actor"];
-const AGENT_FIELDS = ["checkId", "caseId"];
+const AGENT_FIELDS = ["checkId", "caseId", "chat"];
 
 function bad(code, message, status = 400) {
   return { status, body: { ok: false, error: { code, message } } };
@@ -48,6 +48,8 @@ export function createApi({ app, mode }) {
     "POST /api/invoke": async (body) => {
       const extra = undeclared(body, INVOKE_FIELDS);
       if (extra.length) return bad("bad_request", `/api/invoke takes tool, args and actor, not ${extra.join(", ")}.`);
+      // The nexconn actor is the chat adapter's own wiring, never something a page names.
+      if (body.actor === "nexconn") return bad("wrong_actor", "The nexconn actor is the chat adapter's alone; the page's invoke route does not accept it.", 403);
       const response = await invoke(body.tool, body.args, body.actor);
       return { status: statusFor(response), body: response };
     },
@@ -57,10 +59,11 @@ export function createApi({ app, mode }) {
     "POST /api/agent": async (body) => {
       if (Object.hasOwn(body, "actor")) return bad("actor_pinned", "The agent's actor is pinned to agent in code; this route takes no actor.");
       const extra = undeclared(body, AGENT_FIELDS);
-      if (extra.length) return bad("bad_request", `/api/agent takes checkId and caseId, not ${extra.join(", ")}.`);
-      const { checkId = null, caseId = null } = body;
+      if (extra.length) return bad("bad_request", `/api/agent takes checkId, caseId and chat, not ${extra.join(", ")}.`);
+      const { checkId = null, caseId = null, chat = false } = body;
       if (!checkId && !caseId) return bad("bad_request", "/api/agent needs a checkId, a caseId, or both.");
-      const { plan, transcript } = await runPlanner(invoke, { checkId, caseId });
+      if (typeof chat !== "boolean" || (chat && !caseId)) return bad("bad_request", "/api/agent's chat flag is a boolean and needs a caseId.");
+      const { plan, transcript } = await runPlanner(invoke, { checkId, caseId, chat });
       return { status: 200, body: { ok: true, outcome: plan.outcome ?? plan.phase, transcript } };
     },
 

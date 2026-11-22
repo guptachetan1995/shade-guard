@@ -5,6 +5,10 @@
 //
 // With a recording copied into the build (read is then given), the tab replays it through
 // RecordedYouCamProvider; without one it runs the fake provider and says so.
+//
+// chat ({ transport, seat, side, as, visit }) gives the tab one side of the support chat: the
+// returned object then carries chat, whose connect() the page calls once it has drawn its first
+// frame, and whose onChange() it redraws on.
 import { createApp } from "./app.js";
 import { createApi, TICK_MS } from "./api.js";
 import { describeMode } from "./modes.js";
@@ -16,15 +20,16 @@ import { personaOf } from "./persona.js";
 export const PAGES_NOTICE = "This static demo runs on synthetic sample data; it makes no network calls.";
 
 // read(name) → Uint8Array or null: a file of the recorded sample shopper, from the build.
-export async function createPagesTransport({ tick = true, read = null } = {}) {
+export async function createPagesTransport({ tick = true, read = null, chat = null } = {}) {
   const recording = read ? await loadRecording(read) : null;
   const provider = recording ? new RecordedYouCamProvider(recording) : new FakeYouCamProvider();
   const mode = recording ? describeMode("replay", null, { recordedAt: recording.recordedAt, persona: personaOf(recording) }) : describeMode("fake", PAGES_NOTICE);
-  const app = await createApp({ provider });
+  const app = await createApp({ provider, chat });
   const api = createApi({ app, mode });
   if (tick) setInterval(() => api.tick().catch(() => {}), TICK_MS);
   return {
     kind: "pages",
+    chat: app.chat,
     async request(method, path, body = null) {
       const sent = body === null ? null : JSON.parse(JSON.stringify(body));
       const { body: out } = await api.handle(method, path, sent);

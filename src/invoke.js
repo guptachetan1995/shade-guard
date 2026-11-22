@@ -1,6 +1,7 @@
 // The one chokepoint. Every tool call and every human verb, from the store's buttons or from
 // the agent, runs through invoke(tool, args, actor), in this order:
-//   1. the actor is one of the four known actors;
+//   1. the actor is one of the five known actors (the nexconn actor is the chat adapter, and may
+//      call exactly one verb, record_inbound);
 //   2. the name is a registered tool or a human verb, and a verb is called by its own actor;
 //   3. the arguments carry only declared fields (a smuggled cart or status field is refused
 //      and logged, never dropped), with the declared types;
@@ -12,7 +13,11 @@
 import { Refusal } from "./refusal.js";
 import { YouCamError, messageFor } from "./providers/errors.js";
 
-export const ACTORS = Object.freeze(["agent", "shopper", "staff", "merchant"]);
+export const ACTORS = Object.freeze(["agent", "shopper", "staff", "merchant", "nexconn"]);
+
+// The activity log is a ring: the page serves the whole state on every redraw, so a log that only
+// grows is a cost anyone who can send messages could run up.
+export const MAX_LOG_ENTRIES = 2000;
 
 const TYPES = {
   string: (v) => typeof v === "string",
@@ -40,21 +45,28 @@ function checkArgs(def, args) {
   }
 }
 
-// The log keeps what was asked, never the photo itself.
-function redact(args) {
+// The log keeps what was asked, never the photo itself, and for a received message only what names it:
+// its words are in the thread, not in the log.
+function redact(name, args) {
+  if (name === "record_inbound" && TYPES.object(args)) {
+    const { messageId, type, senderUserId, sentTime, content } = args;
+    return { messageId, type, senderUserId, sentTime, contentBytes: JSON.stringify(content ?? null).length };
+  }
   if (!TYPES.object(args)) return args;
   const out = structuredClone(args);
   if (typeof out.photo === "string") out.photo = `[photo, ${out.photo.length} base64 characters, not logged]`;
   return out;
 }
 
-export function createInvoke({ store, provider, tools, verbs, costs, wait = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
+// chat: the chat transport, given to human verbs only. An agent tool's context has no chat key at
+// all, so a tool has no way to reach the service.
+export function createInvoke({ store, provider, tools, verbs, costs, chat = null, wait = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
   const toolMap = new Map(tools.map((t) => [t.name, t]));
   const verbMap = new Map(verbs.map((v) => [v.name, v]));
   let tail = Promise.resolve();
 
   async function call(name, args, actor, concurrent = false) {
-    const entry = { at: store.now(), actor: String(actor), tool: String(name), args: redact(args), result: "ok", units: 0 };
+    const entry = { at: store.now(), actor: String(actor), tool: String(name), args: redact(name, args), result: "ok", units: 0 };
     const spentBefore = store.state.budget.unitsSpentTotal;
     try {
       if (!ACTORS.includes(actor)) {
@@ -67,8 +79,11 @@ export function createInvoke({ store, provider, tools, verbs, costs, wait = (ms)
       if (verb && actor !== verb.actor) {
         throw new Refusal("wrong_actor", `${name} belongs to the ${verb.actor}; ${actor === "agent" ? "the agent never calls a human verb" : `a ${actor} can't call it`}.`);
       }
+      if (actor === "nexconn" && !verb) {
+        throw new Refusal("wrong_actor", `${name} is a tool; the nexconn actor is the chat adapter and may call only record_inbound.`);
+      }
       checkArgs(def, args ?? {});
-      const ctx = { store, provider, costs, wait, actor };
+      const ctx = { store, provider, costs, wait, actor, ...(verb ? { chat } : {}) };
       if (def.gate) {
         const { checkId, units } = def.gate(args, ctx);
         const check = store.getCheck(checkId);
@@ -102,7 +117,9 @@ export function createInvoke({ store, provider, tools, verbs, costs, wait = (ms)
       entry.code = "internal_error";
       throw e;
     } finally {
-      store.state.activityLog.push(entry);
+      const log = store.state.activityLog;
+      log.push(entry);
+      if (log.length > MAX_LOG_ENTRIES) log.splice(0, log.length - MAX_LOG_ENTRIES);
     }
   }
 

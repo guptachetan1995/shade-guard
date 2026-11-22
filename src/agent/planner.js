@@ -7,8 +7,11 @@ import { decide } from "../rules/recommend.js";
 
 export const AGENT = "agent";
 
-export function initialPlan({ checkId = null, caseId = null }) {
+export function initialPlan({ checkId = null, caseId = null, chat = false }) {
   return {
+    chat,
+    thread: null,
+    reply: null,
     checkId,
     caseId,
     phase: checkId ? "lines" : "case",
@@ -101,8 +104,27 @@ function resolutionFor(rcase, reading, lineDraft) {
   return { caseId: rcase.caseId, resolution: "refund", evidence: { reason: "no_match" } };
 }
 
+// The support-thread path: what to cite in a reply draft, from the case's own reading and the
+// resolution that was drafted for it. Never from the shopper's words.
+function replyFor(rcase) {
+  const reading = rcase.reading;
+  const draft = rcase.draft;
+  const deltaE = reading ? Object.fromEntries(reading.ranking.map((r) => [r.code, r.de00])) : null;
+  if (!reading) {
+    if (draft?.resolution === "refund" && draft.evidence?.reason === "no_reading") return { kind: "refund_offer", evidence: { reason: "no_reading" } };
+    return { kind: "check_invite", evidence: {} };
+  }
+  if (draft.resolution === "refund") return { kind: "refund_offer", evidence: { reason: draft.evidence.reason, deltaE, band: reading.band } };
+  const kind = reading.draftDecision === "sample_duo" ? "sample_offer" : "exchange_offer";
+  return { kind, evidence: { shadeCode: draft.shadeCode, deltaE, band: reading.band } };
+}
+
 export function nextCall(plan) {
   switch (plan.phase) {
+    case "thread":
+      return { tool: "read_thread", args: { caseId: plan.caseId } };
+    case "reply":
+      return { tool: "draft_reply", args: { caseId: plan.caseId, ...plan.reply } };
     case "case":
     case "lines":
     case "refresh_case":
@@ -155,7 +177,11 @@ export function observe(previous, call, response) {
       break;
     case "list_return_cases": {
       const rcase = r.cases.find((c) => c.caseId === plan.caseId);
-      if (plan.phase === "case" || plan.phase === "refresh_case") {
+      if (plan.chat && plan.phase === "case") {
+        plan.rcase = rcase;
+        plan.phase = rcase ? "thread" : "done";
+        if (!rcase) plan.outcome = "nothing_to_draft";
+      } else if (plan.phase === "case" || plan.phase === "refresh_case") {
         plan.rcase = rcase;
         if (rcase?.reading && rcase.status === "open") plan.phase = "resolve";
         else {
@@ -169,6 +195,27 @@ export function observe(previous, call, response) {
       }
       break;
     }
+    case "read_thread": {
+      plan.thread = response.ok ? r : null;
+      const rc = plan.rcase;
+      if (!response.ok) {
+        plan.phase = "done";
+        plan.outcome = `failed:${response.error.code}`;
+      } else if (r.closed || rc.status === "exchange_approved" || rc.status === "refund_approved") {
+        plan.phase = "done";
+        plan.outcome = "case_closed";
+      } else if (rc.reading && !rc.draft) {
+        plan.phase = "resolve";
+      } else {
+        plan.reply = replyFor(rc);
+        plan.phase = "reply";
+      }
+      break;
+    }
+    case "draft_reply":
+      plan.phase = "done";
+      plan.outcome = response.ok ? `reply:${r.draft.kind}` : `refused:${response.error.code}`;
+      break;
     case "get_unit_budget": {
       plan.budget = r;
       plan.spentOnCheck = r.unitsSpent;
@@ -235,6 +282,12 @@ export function observe(previous, call, response) {
       if (plan.drafted.length === plan.lines.length) afterDrafts(plan);
       break;
     case "draft_return_resolution":
+      if (plan.chat && response.ok) {
+        plan.rcase = r;
+        plan.reply = replyFor(r);
+        plan.phase = "reply";
+        break;
+      }
       plan.phase = "done";
       plan.outcome = response.ok ? `resolution:${r.draft.resolution}` : `refused:${response.error.code}`;
       break;
@@ -242,8 +295,8 @@ export function observe(previous, call, response) {
   return plan;
 }
 
-export async function runPlanner(invoke, { checkId = null, caseId = null }, { maxSteps = 80 } = {}) {
-  let plan = initialPlan({ checkId, caseId });
+export async function runPlanner(invoke, { checkId = null, caseId = null, chat = false }, { maxSteps = 80 } = {}) {
+  let plan = initialPlan({ checkId, caseId, chat });
   const transcript = [];
   for (let step = 0; step < maxSteps; step++) {
     const call = nextCall(plan);
