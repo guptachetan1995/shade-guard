@@ -10,7 +10,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadNexconnConfig, NEXCONN_HOSTS, defaultNexconnEnvFile } from "../src/config.js";
-import { signHeaders, basesFor, parseFlags } from "../scripts/nexconn-api.js";
+import { signHeaders, basesFor, parseFlags, gitTreeOf } from "../scripts/nexconn-api.js";
 import { run as runTokens, FLAGS as TOKEN_FLAGS } from "../scripts/nexconn-tokens.js";
 import { run as runExpire, IDS_PER_REQUEST, FLAGS as EXPIRE_FLAGS } from "../scripts/nexconn-expire.js";
 
@@ -136,10 +136,14 @@ test("nexconn:tokens refuses to mint twice into one seats file, to write inside 
   const again = await tokens(["--seats", "1", "--seats-file", seats]);
   assert.equal(again.code, 1);
   assert.match(again.err, /already exists/);
-  const inRepo = await tokens(["--seats", "1", "--seats-file", new URL("../nexconn-seats.json", import.meta.url).pathname]);
-  assert.equal(inRepo.code, 1);
-  assert.match(inRepo.err, /outside the repository/);
-  assert.equal(existsSync(new URL("../nexconn-seats.json", import.meta.url).pathname), false);
+  // Only where the entry is in a git work tree (the monorepo, a clone); an exported copy with no
+  // .git is a plain folder, where the next test's temp repo checks the same refusal.
+  if (gitTreeOf(new URL("..", import.meta.url).pathname)) {
+    const inRepo = await tokens(["--seats", "1", "--seats-file", new URL("../nexconn-seats.json", import.meta.url).pathname]);
+    assert.equal(inRepo.code, 1);
+    assert.match(inRepo.err, /outside the repository/);
+    assert.equal(existsSync(new URL("../nexconn-seats.json", import.meta.url).pathname), false);
+  }
   const c = capture();
   const code = await runTokens(["--env-file", envFile(), "--base", "https://api.sg-light-api.com", "--seats-file", seatsPath()], c.io);
   assert.equal(code, 1);
@@ -220,14 +224,21 @@ test("nexconn:expire with no seats file, a refused signature or an unreachable h
 
 test("the seats file may not be written inside ANY git work tree: not the entry, not the monorepo around it, not a hidden folder, not a temp folder that has a .git", async () => {
   const entry = new URL("..", import.meta.url).pathname;
-  const worktreeRoot = join(entry, "..", "..");
-  const inside = [
-    join(entry, "nexconn-seats.json"),
-    join(entry, "..hidden", "seats.json"), // a name that merely begins with two dots is still inside
-    join(worktreeRoot, "nexconn-seats.json"), // the monorepo root, outside the entry directory
-    join(worktreeRoot, "bin", "seats.json"),
-    join(entry, "docs", "new-folder", "seats.json"), // the folder does not exist yet
-  ];
+  // The git work tree this copy sits in: the monorepo around the entry, or the entry itself in a
+  // clone. Never assumed from the folder layout, so a clone writes nothing above itself. A copy with
+  // no .git at all (an exported tree) is not a work tree, so writing there is allowed and its cases
+  // are skipped; the temp repo and the linked worktree below test the rule in every copy.
+  const worktreeRoot = gitTreeOf(entry);
+  const inside = [];
+  if (worktreeRoot) {
+    inside.push(
+      join(entry, "nexconn-seats.json"),
+      join(entry, "..hidden", "seats.json"), // a name that merely begins with two dots is still inside
+      join(entry, "docs", "new-folder", "seats.json"), // the folder does not exist yet
+      join(worktreeRoot, "nexconn-seats.json"), // the work tree's root, outside the entry directory in the monorepo
+      join(worktreeRoot, "bin", "seats.json"),
+    );
+  }
   const repo = mkdtempSync(join(dir, "repo-"));
   mkdirSync(join(repo, ".git"));
   inside.push(join(repo, "seats.json"), join(repo, "deeper", "still", "seats.json"));

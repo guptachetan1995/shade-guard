@@ -3,10 +3,11 @@
 The support chat's contract with the Nexconn Chat SDK: which names the adapter relies on, every
 behaviour it assumes but nobody has seen yet, and the first live run's order of work.
 
-**Status (17 Nov 2026): the adapter is written and tested only against a hand-written stand-in for
-the SDK. It has never connected to Nexconn, no App Key or token has been used, and the SDK has never
-been loaded by this app.** Each "UNVERIFIED" below stays until the live run records what really
-happens, in this file.
+**Status (22 Nov 2026): live on Nexconn since 22 Nov 2026** (App Key `y745wfm8ynetv`, Singapore).
+What the first live run settled and measured is under
+[Results of the live run](#results-of-the-live-run). Still not checked live: the catch-up after a
+dropped connection (U12, U24), the echo of a user's own sends to another tab (U13), the service's
+own unread counts (U19 to U23), and a busy-seat kick, which the service did not produce (U11).
 
 ## How the SDK reaches the page
 

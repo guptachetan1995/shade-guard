@@ -57,9 +57,11 @@
 
 <p class="kicker">Nexconn Build Challenge 2026 · Track: Marketplace &amp; Support · Project write-up</p>
 <h1>Shade Guard</h1>
-<p class="lede">A buyer–store support chat for online beauty stores, on the Nexconn Chat SDK. A shopper
-with an opened foundation in the wrong shade talks to the store's returns desk; an agent drafts the
-reply with the colour numbers in it; only staff send, approve or close.</p>
+<p class="lede">A buyer–store support chat on the Nexconn Chat SDK where an AI agent drafts the
+store's replies, and the chat itself stops a drafted reply from going out after the customer has
+moved on. The worked case: a shopper with an opened foundation in the wrong shade talks to the
+store's returns desk; the agent drafts the reply with the colour numbers in it; only staff send,
+approve or close, and only the shopper accepts.</p>
 
 <div class="facts">
   <dl>
@@ -67,7 +69,7 @@ reply with the colour numbers in it; only staff send, approve or close.</p>
     <dt>Data centre</dt><dd>Singapore</dd>
     <dt>Live demo</dt><dd><a href="https://guptachetan1995.github.io/shade-guard/chat.html">guptachetan1995.github.io/shade-guard/chat.html</a> · no sign-in, nothing to install</dd>
     <dt>Code (MIT)</dt><dd><a href="https://github.com/guptachetan1995/shade-guard">github.com/guptachetan1995/shade-guard</a></dd>
-    <dt>Video</dt><dd>PENDING(video-url) (PENDING(video-length))</dd>
+    <dt>Video</dt><dd><a href="https://youtu.be/4uD-KMsgUHo">youtu.be/4uD-KMsgUHo</a> (2:38)</dd>
     <dt>SDK</dt><dd>Nexconn Chat SDK for the Web, <code>@nexconn/chat</code> and <code>@nexconn/engine</code> 26.2.1</dd>
   </dl>
 </div>
@@ -80,6 +82,15 @@ reply with the colour numbers in it; only staff send, approve or close.</p>
 </table>
 
 <h2>Why we built it</h2>
+<p><b>The communication problem.</b> An agent-drafted support reply is written against the thread as
+it stood when the agent read it. In a live chat the customer keeps typing, so a draft that staff
+approve a minute later can answer a question she has already changed. Most support copilots stop
+at "approve and send". Shade Guard adds three checks on Nexconn itself: every staff send, note,
+approval and close first reads the thread back from Nexconn's history and is refused
+(<code>thread_moved</code>) if she has written since the draft; a message that lands while a send
+is on its way is flagged on the desk afterwards ("Sent over a message you had not seen"); and an
+exchange can't be approved until she taps <b>Accept</b> on the offer card in the chat
+(<code>not_accepted</code>). The beauty return below is the worked example.</p>
 <p>Foundation is bought by colour, and colour is the one thing a product photo can't show on your
 skin. When an online shopper guesses wrong, the store hears about it in its support chat: "this is
 the wrong shade, and I've opened it." Opened cosmetics generally can't be resold for hygiene
@@ -90,6 +101,11 @@ do the colour arithmetic in a second. It can also promise a refund nobody approv
 question the shopper has already moved past, or push an exchange she never agreed to. Shade Guard
 puts the agent's speed into the draft and keeps every message that commits the store in a person's
 hands, and the chat itself enforces that: it is not a guideline staff are asked to follow.</p>
+<p>The agent here is a deterministic planner, not a language model, and the guard does not depend
+on that. It is structural: the agent's <code>draft_reply</code> tool has no text field, the agent's
+tools get no chat transport at all, and a test (<code>tests/chat-boundary.test.js</code>) keeps
+every module they import away from it. A language model behind the same tools would meet the same
+refusals.</p>
 
 <h2>What it does, in the order a judge sees it</h2>
 <ol class="steps">
@@ -255,8 +271,12 @@ faked.</figcaption>
 </table>
 
 <h2>Traction, stated plainly</h2>
-<p>On PENDING(mau-date) the Nexconn console showed <b>PENDING(mau)</b> active users for this app.
-That number is not people. Nexconn counts the unique user ids that connect, and the public demo
+<p><b>What the App Key's usage can confirm.</b> On 22 Nov 2026 the demo's own user ids connected
+to this app live from Bengaluru, and real messages crossed Nexconn: 45 timed notes on one seat,
+both cases end to end for the film (from the public Pages demo), and the first-run checks, each with
+Nexconn's own message id and server time on screen (see "Measured on the live app"). The console's
+usage page, read the same day, still showed <b>0</b> monthly active users: it was last refreshed on
+21 Nov, 15:59 UTC, before the app existed. Whatever it shows later is not people. Nexconn counts the unique user ids that connect, and the public demo
 shares 12 fictional seat ids (four seats, each a desk and two shoppers) among everyone who opens it,
 plus 2 ids registered for tests. However many judges open the demo, the count stays
 at those ids. No users were recruited and none are claimed.</p>
@@ -279,6 +299,12 @@ at those ids. No users were recruited and none are claimed.</p>
     replaces the public demo seats with signed-in shoppers, each with a Nexconn token issued by the
     store's own server, and wires the approval to the store's returns system instead of a
     simulation.</li>
+  <li><b>A first pilot.</b> The desk drops into a store's existing Nexconn support chat as six
+    custom message types and two agent tools. A pilot store would count two things on its
+    wrong-shade returns: how many end as an exchange instead of a refund, and how many stale sends
+    the <code>thread_moved</code> check refused. The first production change is a Nexconn user
+    issued per shopper by the store's own server, in place of the 12 shared demo seats, so real use
+    shows up as real active users. No market figure is claimed here.</li>
   <li><b>What the merchandiser already gets.</b> Every "no close match" reading is kept as numbers and
     listed as a range gap in the merchant panel, so the store learns which shade its range lacks.</li>
 </ul>

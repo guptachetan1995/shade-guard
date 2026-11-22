@@ -23,8 +23,14 @@ accept, approve or close.**
 
 **[Open the support chat](https://guptachetan1995.github.io/shade-guard/chat.html)**: the desk and
 the shopper's phone side by side, live on Nexconn until Wed 2 Dec 2026, with no sign-in and nothing
-to install. **[Open the store](https://guptachetan1995.github.io/shade-guard/)**: the shop on sample
-data. [The one-minute path](#demo-walkthrough).
+to install. [The chat walk, about 90 seconds](#the-chat-walk). **[Open the store](https://guptachetan1995.github.io/shade-guard/)**:
+the shop on sample data ([its one-minute path](#demo-walkthrough)). **[Watch the 2:38 video](https://youtu.be/4uD-KMsgUHo)**: the support chat, filmed live on Nexconn.
+
+[![The live support chat on Nexconn: the shopper asked "is 250W any closer?" after the agent drafted an exchange, so the staff Send is refused as thread_moved; every message shows its Nexconn server time and message id](docs/img/nexconn-thread-moved.png)](https://guptachetan1995.github.io/shade-guard/chat.html)
+
+*The live demo on Nexconn, 22 Nov 2026: Maya wrote "is 250W any closer?" after the agent drafted an
+exchange, so the staff **Send** re-read the thread on Nexconn and was refused (`thread_moved`).
+Every message carries Nexconn's server time and message id.*
 
 Shade Guard is built for the [Nexconn Build Challenge 2026](https://reskilll.com/hack/nexconn)
 (track: Marketplace & Support). It extends a project made for the
@@ -71,7 +77,7 @@ The same walk runs offline, on a fake service:
 npm start -- --fake-chat    # then open http://127.0.0.1:5178/chat.html
 ```
 
-The page shows the desk and the shopper's phone side by side. The walk, about a minute and a half:
+<a id="the-chat-walk"></a>On the live demo or offline, the page shows the desk and the shopper's phone side by side. The walk, about a minute and a half:
 as the shopper (Maya, order O-5521), tap **Start a return: wrong shade, opened**; the request
 reaches the desk, stamped with its server time and id, and the agent drafts an exchange offer for
 245W listing the three closest shades. Type "is 250W any closer?" before staff send: **Send** is
@@ -526,7 +532,7 @@ Runs today, from a fresh clone:
 ```bash
 npm start                   # the store on sample data: http://127.0.0.1:5178
 npm start -- --fake-chat    # also the support chat on a fake in-memory service: http://127.0.0.1:5178/chat.html
-npm test                    # 418 tests, all offline (fake providers, a stand-in for the chat SDK, and loopback stand-ins for the live APIs)
+npm test                    # 419 tests, all offline (fake providers, a stand-in for the chat SDK, and loopback stand-ins for the live APIs)
 npm run lint                # node --check on every file, plus this repo's own static rules
 ./verify.sh                 # the docs checks, then lint and tests
 npm run build:pages -- out  # the static demo in ./out, the same modules served unbundled

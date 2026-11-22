@@ -1,8 +1,9 @@
 # Reskilll submission copy — Shade Guard (Nexconn Build Challenge 2026)
 
 **Challenge:** [Nexconn Build Challenge 2026](https://reskilll.com/hack/nexconn), run by Reskilll
-for Nexconn. **Track:** Marketplace & Support. **Deadline:** Nov 22, 23:59 Anywhere on Earth, which
-is Mon 23 Nov 2026, 17:29 IST.
+for Nexconn. **Track:** Marketplace & Support. **Deadline:** **Sun 22 Nov 2026, 23:59 IST** (the
+live rules, read 22 Nov: "Nov 22, 11:59 PM India time (IST)"; the 6 Nov reading of 23:59 AoE no
+longer holds).
 
 - This file is the copy for each field of Reskilll's "Submit your project" form, in the order the
   form's own text lists them, with each limit as that text states it (read on 6 Nov 2026). Where that text
@@ -48,10 +49,10 @@ Shade Guard
 
 ## One-paragraph summary
 
-Limit: 10 to 2,000 characters. Prompt: "Tell us what the app does and who it is for." This one is
-1,241 characters.
+Limit: 10 to 2,000 characters. Prompt: "Tell us what the app does and who it is for." Recount it
+before pasting (the form counts as it is typed).
 
-> Shade Guard is a buyer–store support chat for online beauty stores, built on the Nexconn Chat SDK. It handles one kind of message: "this foundation is the wrong shade, and I've opened it." An opened foundation generally can't be resold for hygiene reasons, so refunding it means writing the unit off. Here the shopper starts the return from her order page, and the request reaches the store's returns desk over a Nexconn direct channel. An agent reads the thread and the shade reading stored on her order, and drafts a reply for staff: an exchange to the shade the colour numbers support, with the CIEDE2000 distances in the message, or, when the order has no reading, an invitation to check her shade first, which she shares in the chat as numbers only, never a photo. A draft never sends itself. Only a staff click sends a reply, approves the exchange or closes the case, and each of those first reads the thread back from Nexconn: if the shopper has written since the draft, the send is refused and the agent drafts again. The exchange waits for her own Accept in the chat. It is for the support staff of online beauty stores and the shoppers they serve. The store, the shoppers and the face reading in the demo are fictional sample data.
+> Shade Guard is a buyer–store support chat on the Nexconn Chat SDK where an AI agent drafts the store's replies, and the chat itself stops a drafted reply from going out after the customer has moved on. Most support copilots stop at "approve and send"; here every staff send first reads the thread back from Nexconn and is refused if the customer has written since, and an exchange can't be approved until the customer taps Accept on the offer in the chat. The worked case is one kind of message to online beauty stores: "this foundation is the wrong shade, and I've opened it." An opened foundation generally can't be resold for hygiene reasons, so refunding it means writing the unit off. Here the shopper starts the return from her order page, and the request reaches the store's returns desk over a Nexconn direct channel. An agent reads the thread and the shade reading stored on her order, and drafts a reply for staff: an exchange to the shade the colour numbers support, with the CIEDE2000 distances in the message, or, when the order has no reading, an invitation to check her shade first, which she shares in the chat as numbers only, never a photo. A draft never sends itself. Only a staff click sends a reply, approves the exchange or closes the case, and each of those first reads the thread back from Nexconn: if the shopper has written since the draft, the send is refused and the agent drafts again. The exchange waits for her own Accept in the chat. It is for the support staff of online beauty stores and the shoppers they serve. The store, the shoppers and the face reading in the demo are fictional sample data.
 
 ## Nexconn App Key
 
@@ -114,13 +115,13 @@ https://github.com/guptachetan1995/shade-guard (public, with the MIT licence at 
 
 ## Demo video
 
-PENDING(video-url) (YouTube, Public, PENDING(video-length))
+https://youtu.be/4uD-KMsgUHo (YouTube, Public, 2:38)
 
 ## Write-up (PDF)
 
 "Upload one PDF." "The PDF must be 25 MB or smaller." The PDF is `docs/writeup-nexconn.html`
 printed to Letter pages once every slot in it is filled. It carries the App Key, as the rules ask:
-"Put the App Key in your write-up and in the submission form." Size: PENDING(pdf-size).
+"Put the App Key in your write-up and in the submission form." Size: 501 KB (512,709 bytes), 6 pages.
 
 ## Traction (optional)
 
@@ -176,7 +177,7 @@ The title is 80 characters; YouTube allows 100.
 |---|---|---|
 | "The demo works fully and runs smoothly. The interface is clean, and the interaction is clear and easy to understand." | 50% | The live demo, with no sign-in and nothing to install; the write-up's "Try it in 90 seconds"; the video, beats 1 to 15. Every message shows its Nexconn server time and message id; every connection state has words on screen; a reload brings the thread back from Nexconn's history. Measured send-to-arrival: a median of 223 ms from Nexconn's server send time to arrival on the other pane (218 to 356 ms over 45 notes sent 300 ms apart, desk to phone, Bengaluru to the Singapore data centre, read on the receiving machine's clock); the receiving pane had each note a median 143 ms after the sending pane's send call returned, both on one clock |
 | "Judges look at how new the idea is. They also look at whether it solves a real communication problem or adds a new, interesting interaction." | 30% | The write-up's "Why we built it" and "The rule the chat enforces". The shade reading travels as a numbers-only card; the reply quotes the reading's own ΔE00; a draft never sends; a send re-reads the thread on Nexconn and is refused when the customer has written since; the exchange waits for her own Accept (video beats 4, 6, 9 and 12) |
-| "Judges look at traction and viability. They count early users as active users on Nexconn. They also look at whether the app can become a real product." | 20% | No users are claimed. The console showed PENDING(mau) active users on PENDING(mau-date): the demo's own seat ids and test ids, not people (write-up, "Traction, stated plainly"). Viability: the write-up's "Can it become a product?" |
+| "Judges look at traction and viability. They count early users as active users on Nexconn. They also look at whether the app can become a real product." | 20% | No users are claimed. The demo's own ids connected and real messages crossed Nexconn on 22 Nov (45 timed notes, both cases end to end, the film from the public demo); the console still showed 0 monthly active users that day (its usage was last refreshed on 21 Nov, 15:59 UTC, before the app existed), and whatever it shows later is the demo's own seat ids and test ids, not people (write-up, "Traction, stated plainly"). Viability: the write-up's "Can it become a product?" |
 
 ## What this entry does not claim
 
